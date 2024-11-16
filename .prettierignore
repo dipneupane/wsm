@@ -1,0 +1,14 @@
+# Ignore artifacts:
+build
+dist
+coverage
+node_modules
+
+# Ignore all HTML files:
+*.html
+
+# Ignore specific files:
+src/someFileToIgnore.js
+
+# Ignore all files in a specific directory:
+src/someDirectoryToIgnore/**
