@@ -14,6 +14,7 @@ interface IPickListItems {
   order?: string;
   date?: string;
   notes?: string;
+  categoryId?: number;
 }
 
 interface ICreatePickListItem extends IPickListBase, IPickListItems {}
@@ -29,4 +30,23 @@ export type PickListGetAllType = {
   status: string;
   itemsCount: number;
   createdDate: string;
+};
+
+export type PickListGetByIdType = {
+  id: number;
+  referenceNo: string;
+  customerId: number;
+  priorityId: number;
+  createdDate: string;
+  requiredDate: string;
+  pickListItems: {
+    categoryId?: number;
+    itemId: number;
+    fireRating?: string;
+    size?: string;
+    finish?: string;
+    order?: string;
+    date?: string;
+    notes?: string;
+  }[];
 };

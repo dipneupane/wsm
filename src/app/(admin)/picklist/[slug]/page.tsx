@@ -1,13 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import { getAllCategories } from '@/services/categories';
 import { getAllCustomerInformation } from '@/services/customer';
 import { getAllInventoryItems } from '@/services/inventory-item';
-import { createPickList } from '@/services/pick-list';
+import {
+  createPickList,
+  getPickListById,
+  updatePickList,
+} from '@/services/pick-list';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronsUpDown, Loader2Icon, Trash2Icon } from 'lucide-react';
@@ -68,17 +72,28 @@ const pickListSchema = z.object({
   requiredDate: z.string(),
 });
 
-const PickUpListRootPage = () => {
+interface PickListProps {
+  params: {
+    slug: string;
+  };
+}
+
+const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   const [open, setOpen] = React.useState(false);
+
+  const { data: pickListDataById } = useQuery({
+    queryKey: ['PickList', 'GetById', Number(slug)],
+    queryFn: () => getPickListById(Number(slug)),
+  });
 
   // Initialize form with Zod resolver
   const form = useForm<z.infer<typeof pickListSchema>>({
     resolver: zodResolver(pickListSchema),
     defaultValues: {
-      referenceNo: '',
-      customerId: 0,
-      priorityId: 0,
-      requiredDate: '',
+      referenceNo: pickListDataById?.referenceNo,
+      customerId: pickListDataById?.customerId,
+      priorityId: pickListDataById?.priorityId,
+      requiredDate: pickListDataById?.requiredDate,
     },
   });
 
@@ -99,7 +114,7 @@ const PickUpListRootPage = () => {
   });
 
   type pickListItems = {
-    categoryId: number;
+    categoryId?: number;
     itemId: number;
     fireRating?: string;
     size?: string;
@@ -113,11 +128,34 @@ const PickUpListRootPage = () => {
 
   const queryClient = useQueryClient();
   const router = useRouter();
+
+  //   console.log(pickListDataById);
+
+  useEffect(() => {
+    if (pickListDataById) {
+      form.reset({
+        referenceNo: pickListDataById.referenceNo,
+        customerId: pickListDataById.customerId,
+        priorityId: pickListDataById.priorityId,
+        requiredDate: new Date(pickListDataById.requiredDate)
+          .toISOString()
+          .split('T')[0],
+      });
+
+      setPickListItems(
+        pickListDataById.pickListItems.map((item) => ({
+          ...item,
+          date: new Date(item.date!).toISOString().split('T')[0],
+        }))
+      );
+    }
+  }, [pickListDataById]);
+
   const mutation = useMutation({
-    mutationFn: createPickList,
+    mutationFn: updatePickList,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PICKLIST_QUERY_KEY });
-      toast.success('Pick list created successfully');
+      toast.success('Pick list updated successfully');
       router.push('/picklist');
     },
     onError: (error: any) => {
@@ -151,7 +189,6 @@ const PickUpListRootPage = () => {
       ...validatedData,
       pickListItems: pickListItemsWithoutCategory,
     };
-    console.log(data);
     mutation.mutateAsync(data);
   };
 
@@ -488,4 +525,4 @@ const PickUpListRootPage = () => {
   );
 };
 
-export default PickUpListRootPage;
+export default PickUpListEditPage;

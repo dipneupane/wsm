@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 
-import { generateCustomerPDF } from '@/action/generate-pdf';
-import { getAllPickListInformation } from '@/services/pick-list';
+import {
+  downloadPickListProductionSheet,
+  getAllPickListInformation,
+} from '@/services/pick-list';
 import { useQuery } from '@tanstack/react-query';
-import { jsPDF } from 'jspdf';
 import { MoreHorizontal } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -29,18 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-type DataItem = {
-  id: number;
-  referenceNo: string;
-  customerId: number;
-  customerName: string;
-  statusId: number;
-  status: string;
-  itemsCount: number;
-  createdDate: string;
-};
-
-export default function Component() {
+export default function PickListRootPage() {
   const { data } = useQuery({
     queryKey: ['PickList'],
     queryFn: getAllPickListInformation,
@@ -57,34 +47,23 @@ export default function Component() {
     });
   };
 
-  const generatePDF = (customerData: DataItem) => {
-    const doc = new jsPDF();
-    // Add content to the PDF
-    doc.setFontSize(22);
-    doc.text('DOORSETS REPORT', 105, 20, { align: 'center' });
-
-    doc.setFontSize(12);
-    doc.text(`Customer ID: ${customerData.id}`, 20, 40);
-    doc.text(`Reference No: ${customerData.referenceNo}`, 20, 50);
-    doc.text(`Customer Name: ${customerData.customerName}`, 20, 60);
-    doc.text(`Status: ${customerData.status}`, 20, 70);
-    doc.text(`Items Count: ${customerData.itemsCount}`, 20, 80);
-    doc.text(
-      `Created Date: ${new Date(customerData.createdDate).toLocaleString()}`,
-      20,
-      90
-    );
-
-    doc.setFontSize(10);
-    doc.text(
-      'This is an automatically generated report for the customer.',
-      105,
-      110,
-      { align: 'center' }
-    );
-
-    // Save the PDF
-    doc.save(`customer_${customerData.id}_report.pdf`);
+  const generatePDF = async (pickListID: number) => {
+    try {
+      const { blob, filename } =
+        await downloadPickListProductionSheet(pickListID);
+      // Create a Blob URL
+      const blobUrl = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', filename); // Use the extracted filename
+      document.body.appendChild(link);
+      link.click();
+      // Cleanup
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Error downloading the file:', error);
+    }
   };
 
   return (
@@ -134,8 +113,13 @@ export default function Component() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => generatePDF(item)}>
+                    <DropdownMenuItem onClick={() => generatePDF(item.id)}>
                       Download PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link className="w-full" href={`/picklist/${item.id}`}>
+                        Edit
+                      </Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

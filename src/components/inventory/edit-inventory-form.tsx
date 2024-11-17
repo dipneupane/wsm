@@ -53,11 +53,11 @@ import { Textarea } from '@/components/ui/textarea';
 const formSchema = z.object({
   id: z.number(),
   code: z.string(),
-  cost: z.number(),
+  cost: z.any(),
   description: z.string(),
   categoryId: z.number(),
   supplierId: z.number(),
-  stock: z.number(),
+  stock: z.any(),
 });
 
 export default function EditInventoryItemForm({

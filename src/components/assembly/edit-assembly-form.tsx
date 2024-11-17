@@ -97,7 +97,6 @@ export default function EditAssemblyForm({
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      console.log(values);
       mutation.mutate(values);
     } catch (error) {
       console.error('Form submission error', error);

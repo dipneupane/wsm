@@ -14,8 +14,8 @@ export default function InventoryItemsTable({ data }: IUsersTableProps) {
     <DataTable<InventoryItemsGetAllType>
       data={data}
       columns={columns}
-      //   filterColumn="code"
-      //   filterPlaceholder="Filter by code..."
+      filterColumn="code"
+      filterPlaceholder="Filter by code..."
     />
   );
 }

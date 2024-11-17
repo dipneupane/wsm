@@ -47,18 +47,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
 
     async redirect({ url, baseUrl }) {
-      if (url === baseUrl + "/api/auth/signout") {
-        return baseUrl; 
+      if (url.includes('/signout') || url.includes('/api/auth/signout')) {
+        return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
       }
+      // Handle other redirects
       if (url.startsWith('/')) return `${baseUrl}${url}`;
       return baseUrl;
     },
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 500 * 60, // 500 minutes in seconds
   },
   pages: {
     signIn: '/login',
+  },
+  cookies: {
+    sessionToken: {
+      name: 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 500 * 60, // 500 minutes in seconds
+      },
+    },
   },
 });
