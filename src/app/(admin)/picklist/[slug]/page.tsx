@@ -1,74 +1,28 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { getAllCategories } from '@/services/categories';
-import { getAllCustomerInformation } from '@/services/customer';
-import { getAllInventoryItems } from '@/services/inventory-item';
+import React, { useState } from 'react';
+
+import Link from 'next/link';
+
 import {
+  downloadPickListProductionSheet,
   getPickListById,
-  updatePickList,
 } from '@/services/pick-list';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronsUpDown, Loader2Icon, Trash2Icon } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { Download, DownloadIcon, Edit2Icon } from 'lucide-react';
 
-import {
-  CATEGORY_QUERY_KEY,
-  CUSTOMER_QUERY_KEY,
-  INVENTORY_QUERY_KEY,
-  PICKLIST_QUERY_KEY,
-} from '@/config/query-keys';
-
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-const PriorityLevel = {
-  Pending: 1,
-  InProgress: 2,
-  Completed: 3,
-} as const;
-
-// Create the Zod schema
-const pickListSchema = z.object({
-  id: z.number(),
-  referenceNo: z.string().min(1, 'Reference number is required'),
-  customerId: z.number().int().positive('Please select a customer'),
-  priorityId: z.number().int(),
-  requiredDate: z.string(),
-});
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface PickListProps {
   params: {
@@ -76,445 +30,153 @@ interface PickListProps {
   };
 }
 
-const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
-  const [open, setOpen] = React.useState(false);
+const priorityMap = {
+  1: 'Pending',
+  2: 'In Progress',
+  3: 'Completed',
+};
 
-  const { data: pickListDataById } = useQuery({
+export default function ViewPickupListItems({
+  params: { slug },
+}: PickListProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const {
+    data: pickListData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['PickList', 'GetById', Number(slug)],
     queryFn: () => getPickListById(Number(slug)),
   });
 
-  // Initialize form with Zod resolver
-  const form = useForm<z.infer<typeof pickListSchema>>({
-    resolver: zodResolver(pickListSchema),
-    defaultValues: {
-      id: pickListDataById?.id,
-      referenceNo: pickListDataById?.referenceNo,
-      customerId: pickListDataById?.customerId,
-      priorityId: pickListDataById?.priorityId,
-      requiredDate: pickListDataById?.requiredDate,
-    },
-  });
-
-  // Query hooks
-  const { data: categoryData, isLoading: isCategotyLoading } = useQuery({
-    queryKey: CATEGORY_QUERY_KEY,
-    queryFn: getAllCategories,
-  });
-
-  const { data: inventoryItemsList } = useQuery({
-    queryKey: INVENTORY_QUERY_KEY,
-    queryFn: getAllInventoryItems,
-  });
-
-  const { data: customerList } = useQuery({
-    queryKey: CUSTOMER_QUERY_KEY,
-    queryFn: getAllCustomerInformation,
-  });
-
-  type pickListItems = {
-    categoryId?: number;
-    itemId: number;
-    itemCode: string;
-    fireRating?: string;
-    size?: string;
-    finish?: string;
-    order?: string;
-    date?: string;
-    notes?: string;
-  };
-
-  const [pickListItems, setPickListItems] = React.useState<pickListItems[]>([]);
-
-  const queryClient = useQueryClient();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (pickListDataById) {
-      form.reset({
-        id: pickListDataById.id,
-        referenceNo: pickListDataById.referenceNo,
-        customerId: pickListDataById.customerId,
-        priorityId: pickListDataById.priorityId,
-        requiredDate: new Date(pickListDataById.requiredDate)
-          .toISOString()
-          .split('T')[0],
-      });
-
-      setPickListItems(pickListDataById.pickListItems.map((item) =>
-        ({ ...item, itemCode: item.itemCode, date: new Date(item.date!).toISOString().split('T')[0] })));
+  const generatePDF = async (pickListID: number) => {
+    setIsDownloading(true);
+    try {
+      const { blob, filename } =
+        await downloadPickListProductionSheet(pickListID);
+      // Create a Blob URL
+      const blobUrl = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', filename); // Use the extracted filename
+      document.body.appendChild(link);
+      link.click();
+      // Cleanup
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Error downloading the file:', error);
+    } finally {
+      setIsDownloading(false);
     }
-  }, [pickListDataById]);
+  };
 
-  const mutation = useMutation({
-    mutationFn: updatePickList,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PICKLIST_QUERY_KEY });
-      toast.success('Pick list updated successfully');
-      router.push('/picklist');
-    },
-    onError: (error: any) => {
-      toast.error(error.message);
-    },
-  });
-  const handleItemFieldChange = (
-    itemId: number,
-    field: keyof Omit<pickListItems, 'categoryId' | 'itemId'>,
-    value: string
-  ) => {
-    setPickListItems((prevItems) =>
-      prevItems.map((item) =>
-        item.itemId === itemId ? { ...item, [field]: value } : item
-      )
+  if (isLoading)
+    return (
+      <div className="flex h-screen items-center justify-center">
+        Loading...
+      </div>
     );
-  };
-
-  const onSubmit = async (values: z.infer<typeof pickListSchema>) => {
-    debugger;
-    const validatedData = pickListSchema.parse(values);
-    const pickListItemsWithoutCategory = pickListItems.map((p) => ({
-      itemId: p.itemId,
-      fireRating: p.fireRating,
-      size: p.size,
-      finish: p.finish,
-      order: p.order,
-      date: p.date ?? new Date(Date.now()).toISOString(),
-      notes: p.notes,
-    }));
-    const data = { ...validatedData, pickListItems: pickListItemsWithoutCategory };
-    mutation.mutateAsync(data);
-  };
+  if (error)
+    return (
+      <div className="text-red-500">Error: {(error as Error).message}</div>
+    );
+  if (!pickListData) return <div>No data found</div>;
 
   return (
-    <>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="referenceNo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Reference No</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter reference number"
-                      {...field}
-                      className={
-                        form.formState.errors.referenceNo
-                          ? 'border-red-500'
-                          : ''
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="priorityId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority</FormLabel>
-                  <Select
-                    onValueChange={(value) => field.onChange(Number(value))}
-                    value={field.value ? field.value.toString() : undefined}
-                  >
-                    <SelectTrigger
-                      className={
-                        form.formState.errors.priorityId ? 'border-red-500' : ''
-                      }
-                    >
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={PriorityLevel.Completed.toString()}>
-                        Completed
-                      </SelectItem>
-                      <SelectItem value={PriorityLevel.InProgress.toString()}>
-                        In Progress
-                      </SelectItem>
-                      <SelectItem value={PriorityLevel.Pending.toString()}>
-                        Pending
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="customerId"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Customer</FormLabel>
-                  <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className={`justify-between ${form.formState.errors.customerId ? 'border-red-500' : ''}`}
-                      >
-                        {field.value && customerList
-                          ? customerList.find(
-                            (customer) => customer.id === field.value
-                          )?.fullName
-                          : 'Select Customer'}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput placeholder="Search customers..." />
-                        <CommandEmpty>No customer found.</CommandEmpty>
-                        <CommandGroup>
-                          <ScrollArea className="h-64">
-                            {customerList?.map((customer) => (
-                              <CommandItem
-                                key={customer.id}
-                                onSelect={() => {
-                                  form.setValue('customerId', customer.id, {
-                                    shouldValidate: true,
-                                  });
-                                  setOpen(false);
-                                }}
-                              >
-                                {customer.fullName}
-                              </CommandItem>
-                            ))}
-                          </ScrollArea>
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="requiredDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Required Date</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      {...field}
-                      className={
-                        form.formState.errors.requiredDate
-                          ? 'border-red-500'
-                          : ''
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          {isCategotyLoading && (
-            <Loader2Icon className="animate-spin text-primary" />
-          )}
-          {categoryData?.map((c, index) => (
-            <div key={index} className="border-b">
-              {/* top */}
-              <div className="flex items-center justify-between pb-2">
-                <h2>
-                  {index + 1} {c.value}
-                </h2>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="justify-between"
-                    >
-                      Select items
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search items..." />
-                      <CommandEmpty>No items found.</CommandEmpty>
-                      <CommandGroup>
-                        <ScrollArea className="h-64">
-                          {inventoryItemsList?.map((item) =>
-                            item.categoryId === c.key && (
-                              <>
-                                {
-                                  <CommandItem
-                                    disabled={pickListItems?.some(
-                                      (i) => i.itemId === item.id
-                                    )}
-                                    onSelect={() =>
-                                      setPickListItems((prev) => [
-                                        ...prev,
-                                        {
-                                          itemId: item.id,
-                                          categoryId: c.key,
-                                          itemCode: item.code
-                                        },
-                                      ])
-                                    }
-                                    key={item.categoryId}
-                                  >
-                                    {item.categoryId}-{item.id} -{item.code} -{' '}
-                                    {item.description}
-                                  </CommandItem>
-                                }
-                              </>
-                            )
-                          )}
-                        </ScrollArea>
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/*  additional fields  */}
-              <div className="">
-                {pickListItems?.map(
-                  (item) =>
-                    item.categoryId === c.key && (
-                      <div
-                        key={item.itemId}
-                        className="flex items-center justify-center gap-x-2 py-2"
-                      >
-                        <Button
-                          className="translate-y-3"
-                          variant="destructive"
-                          onClick={() =>
-                            setPickListItems((prev) =>
-                              prev.filter((v) => v.itemId !== item.itemId)
-                            )
-                          }
-                        >
-                          <Trash2Icon />
-                        </Button>
-                        <div className="hidden">
-                          <Label>Id</Label>
-                          <Input value={item.itemId} disabled type="text" />
-                        </div>
-
-                        <div>
-                          <Label>Item Code</Label>
-                          <Input value={item.itemCode} disabled type="text" />
-                        </div>
-
-                        <div className="">
-                          <Label>Fire Rating</Label>
-                          <Input
-                            type="text"
-                            value={item.fireRating || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'fireRating',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Size</Label>
-                          <Input
-                            type="text"
-                            value={item.size || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'size',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Finish</Label>
-                          <Input
-                            type="text"
-                            value={item.finish || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'finish',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Order</Label>
-                          <Input
-                            type="text"
-                            value={item.order || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'order',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Date</Label>
-                          <Input
-                            type="date"
-                            value={item.date || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'date',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Notes</Label>
-                          <Input
-                            type="text"
-                            value={item.notes || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'notes',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                    )
-                )}
-              </div>
+    <div className="container mx-auto p-4">
+      <Card className="bg-inherit">
+        <CardHeader>
+          <CardTitle>Pick List Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6 grid grid-cols-2 gap-4">
+            <div>
+              <p className="font-semibold">Reference No:</p>
+              <p>{pickListData.referenceNo}</p>
             </div>
-          ))}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? 'Submitting...' : 'Submit Pick List'}
-          </Button>
-        </form>
-      </Form>
-    </>
-  );
-};
+            <div>
+              <p className="font-semibold">Customer ID:</p>
+              <p>{pickListData.customerId}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Priority:</p>
+              <Badge
+                variant={
+                  pickListData.priorityId === 1
+                    ? 'default'
+                    : pickListData.priorityId === 2
+                      ? 'secondary'
+                      : 'outline'
+                }
+              >
+                {
+                  priorityMap[
+                    pickListData.priorityId as keyof typeof priorityMap
+                  ]
+                }
+              </Badge>
+            </div>
+            <div>
+              <p className="font-semibold">Created Date:</p>
+              <p>{format(new Date(pickListData.createdDate), 'PPP')}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Required Date:</p>
+              <p>{format(new Date(pickListData.requiredDate), 'PPP')}</p>
+            </div>
 
-export default PickUpListEditPage;
+            <div className="space-x-2">
+              <Button
+                onClick={() => generatePDF(pickListData.id)}
+                disabled={isDownloading}
+              >
+                <DownloadIcon />
+                {isDownloading ? 'Downloading...' : 'Download'}
+              </Button>
+              <Link href={`/picklist/${pickListData.id}/edit`}>
+                <Button>
+                  <Edit2Icon />
+                  Edit
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <h3 className="mb-2 text-lg font-semibold">Pick List Items</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item ID</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Fire Rating</TableHead>
+                <TableHead>Size</TableHead>
+                <TableHead>Finish</TableHead>
+                <TableHead>Order</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Notes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pickListData.pickListItems.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell>{item.itemId}</TableCell>
+                  <TableCell>{item.categoryId || 'N/A'}</TableCell>
+                  <TableCell>{item.fireRating || 'N/A'}</TableCell>
+                  <TableCell>{item.size || 'N/A'}</TableCell>
+                  <TableCell>{item.finish || 'N/A'}</TableCell>
+                  <TableCell>{item.order || 'N/A'}</TableCell>
+                  <TableCell>
+                    {item.date ? format(new Date(item.date), 'PPP') : 'N/A'}
+                  </TableCell>
+                  <TableCell>{item.notes || 'N/A'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

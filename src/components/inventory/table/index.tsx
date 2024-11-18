@@ -11,8 +11,11 @@ export default function InventoryItemsTable({ data }: IUsersTableProps) {
     <DataTable<InventoryItemsGetAllType>
       data={data}
       columns={columns}
-      filterColumn="code"
-      filterPlaceholder="Filter by code..."
+      searchFields={[
+        { column: 'code', label: 'Code' },
+        { column: 'categoryName', label: 'CategoryName' },
+        { column: 'supplierName', label: 'SuppilerName' },
+      ]}
     />
   );
 }

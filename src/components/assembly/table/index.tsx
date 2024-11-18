@@ -9,5 +9,11 @@ interface IUsersTableProps {
 }
 
 export default function AssemblyTable({ data }: IUsersTableProps) {
-  return <DataTable<AssemblyGetAllType> data={data} columns={columns} />;
+  return (
+    <DataTable<AssemblyGetAllType>
+      data={data}
+      columns={columns}
+      searchFields={[{ column: 'code', label: 'Code' }]}
+    />
+  );
 }

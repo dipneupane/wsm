@@ -1,8 +1,11 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
+import { ArrowUpDown } from 'lucide-react';
 
 import { InventoryItemsGetAllType } from '@/types/inventory-items';
+
+import { Button } from '@/components/ui/button';
 
 import ActionCellComponent from './action';
 
@@ -21,7 +24,17 @@ export const columns: ColumnDef<InventoryItemsGetAllType>[] = [
   },
   {
     accessorKey: 'cost',
-    header: 'Cost',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Cost
+          <ArrowUpDown />
+        </Button>
+      );
+  },
   },
   {
     accessorKey: 'stock',

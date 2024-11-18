@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import Link from 'next/link';
 
 import { getAllInventoryItems } from '@/services/inventory-item';
@@ -20,6 +22,8 @@ const InventoryRootPage = () => {
     queryKey: INVENTORY_QUERY_KEY,
     queryFn: getAllInventoryItems,
   });
+  const [isExporting, setIsExporting] = useState(false);
+
   if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -28,21 +32,34 @@ const InventoryRootPage = () => {
     );
   }
 
+  const handleItemExport = async (data: any) => {
+    setIsExporting(true);
+    await handleInventoryItemExport(data);
+    setIsExporting(false);
+  };
+
   return (
     <DashboardShell>
-      <DashboardHeader text=" Manage your Inventory Item" heading="Inventory" />
+      <DashboardHeader text="Manage your Inventory Item" heading="Inventory" />
       <div className="flex w-full justify-end gap-x-2">
-        <Button onClick={() => handleInventoryItemExport(data!)}>
-          <ArrowDownIcon />
+        <Button onClick={() => handleItemExport(data!)} disabled={isExporting}>
+          {isExporting ? (
+            <Loader2Icon className="h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowDownIcon />
+          )}
           Export
         </Button>
-        <Button>
-          <PlusCircleIcon />
-          <Link href="/inventory/add">Add Inventory Item</Link>
-        </Button>
+        <Link href="/inventory/add">
+          <Button>
+            <PlusCircleIcon />
+            Add Inventory Item
+          </Button>
+        </Link>
       </div>
       <InventoryItemsTable data={data} />
     </DashboardShell>
   );
 };
+
 export default InventoryRootPage;

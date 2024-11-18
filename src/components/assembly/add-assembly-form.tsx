@@ -44,7 +44,7 @@ const formSchema = z.object({
   items: z.array(z.number()),
 });
 
-type InventoryItem = {
+interface InventoryItem {
   id: number;
   categoryName: string;
   supplierName: string;
@@ -54,10 +54,85 @@ type InventoryItem = {
   supplierId: number;
   cost: number;
   stock: number;
+}
+
+interface ItemSelectorProps {
+  items: InventoryItem[];
+  selectedIds: number[];
+  onSelect: (ids: number[]) => void;
+}
+
+const ItemSelector = ({ items, selectedIds, onSelect }: ItemSelectorProps) => {
+  const handleSelect = (itemId: number) => {
+    const newItems = selectedIds.includes(itemId)
+      ? selectedIds.filter((id) => id !== itemId)
+      : [...selectedIds, itemId];
+    onSelect(newItems);
+  };
+
+  const selectedItems = items.filter((item) => selectedIds.includes(item.id));
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" role="combobox" className="justify-between">
+            Select items
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0">
+          <Command>
+            <CommandInput placeholder="Search items..." />
+            <CommandEmpty>No items found.</CommandEmpty>
+            <CommandGroup>
+              <ScrollArea className="h-64">
+                {items.map((item) => (
+                  <CommandItem
+                    key={item.id}
+                    onSelect={() => handleSelect(item.id)}
+                  >
+                    <Check
+                      className={`mr-2 h-4 w-4 ${
+                        selectedIds.includes(item.id)
+                          ? 'opacity-100'
+                          : 'opacity-0'
+                      }`}
+                    />
+                    {item.code} - {item.description}
+                  </CommandItem>
+                ))}
+              </ScrollArea>
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      <div className="flex flex-wrap gap-2">
+        {selectedItems.map((item) => (
+          <div key={item.id} className="flex items-center gap-1">
+            <Badge variant="secondary" className="px-3 py-1">
+              {item.code}
+            </Badge>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 hover:bg-destructive hover:text-destructive-foreground"
+              onClick={() => handleSelect(item.id)}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Remove {item.code}</span>
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default function AddAssemblyForm() {
-  const { data: inventoryItemsList } = useQuery({
+  const { data: inventoryItems = [] } = useQuery({
     queryKey: INVENTORY_QUERY_KEY,
     queryFn: getAllInventoryItems,
   });
@@ -71,7 +146,7 @@ export default function AddAssemblyForm() {
       toast.success('Assembly created successfully');
       router.push('/assemblies');
     },
-    onError: (error) => {
+    onError: () => {
       toast.error('Failed to create category');
     },
   });
@@ -83,14 +158,14 @@ export default function AddAssemblyForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       mutation.mutate(values);
     } catch (error) {
       console.error('Form submission error', error);
       toast.error('Failed to submit the form. Please try again.');
     }
-  }
+  };
 
   return (
     <Form {...form}>
@@ -132,89 +207,16 @@ export default function AddAssemblyForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Inventory Items</FormLabel>
-              <div className="flex flex-col gap-4">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="justify-between"
-                    >
-                      Select items
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search items..." />
-                      <CommandEmpty>No items found.</CommandEmpty>
-                      <CommandGroup>
-                        <ScrollArea className="h-64">
-                          {inventoryItemsList &&
-                            inventoryItemsList?.map((item: InventoryItem) => (
-                              <CommandItem
-                                key={item.id}
-                                onSelect={() => {
-                                  const currentItems = field.value || [];
-                                  const newItems = currentItems.includes(
-                                    item.id
-                                  )
-                                    ? currentItems.filter(
-                                        (id) => id !== item.id
-                                      )
-                                    : [...currentItems, item.id];
-                                  field.onChange(newItems);
-                                }}
-                              >
-                                <Check
-                                  className={`mr-2 h-4 w-4 ${
-                                    field.value?.includes(item.id)
-                                      ? 'opacity-100'
-                                      : 'opacity-0'
-                                  }`}
-                                />
-                                {item.code} - {item.description}
-                              </CommandItem>
-                            ))}
-                        </ScrollArea>
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-
-                <div className="flex flex-wrap gap-2">
-                  {field.value?.map((itemId) => {
-                    const item = inventoryItemsList?.find(
-                      (i: InventoryItem) => i.id === itemId
-                    );
-                    return (
-                      <div key={itemId} className="flex items-center gap-1">
-                        <Badge variant="secondary" className="px-3 py-1">
-                          {item?.code}
-                        </Badge>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                          onClick={() => {
-                            field.onChange(
-                              field.value.filter((id) => id !== itemId)
-                            );
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Remove {item?.code}</span>
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <ItemSelector
+                items={inventoryItems}
+                selectedIds={field.value}
+                onSelect={field.onChange}
+              />
               <FormMessage />
             </FormItem>
           )}
         />
+
         <Button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? (
             <>

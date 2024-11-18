@@ -1,11 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import { getAllCategories } from '@/services/categories';
 import { getAllCustomerInformation } from '@/services/customer';
 import { getAllInventoryItems } from '@/services/inventory-item';
-import { createPickList } from '@/services/pick-list';
+import {
+  createPickList,
+  getPickListById,
+  updatePickList,
+} from '@/services/pick-list';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronsUpDown, Loader2Icon, Trash2Icon } from 'lucide-react';
@@ -66,17 +72,28 @@ const pickListSchema = z.object({
   requiredDate: z.string(),
 });
 
-const PickUpListRootPage = () => {
+interface PickListProps {
+  params: {
+    slug: string;
+  };
+}
+
+const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   const [open, setOpen] = React.useState(false);
+
+  const { data: pickListDataById } = useQuery({
+    queryKey: ['PickList', 'GetById', Number(slug)],
+    queryFn: () => getPickListById(Number(slug)),
+  });
 
   // Initialize form with Zod resolver
   const form = useForm<z.infer<typeof pickListSchema>>({
     resolver: zodResolver(pickListSchema),
     defaultValues: {
-      referenceNo: '',
-      customerId: 0,
-      priorityId: 0,
-      requiredDate: '',
+      referenceNo: pickListDataById?.referenceNo,
+      customerId: pickListDataById?.customerId,
+      priorityId: pickListDataById?.priorityId,
+      requiredDate: pickListDataById?.requiredDate,
     },
   });
 
@@ -97,9 +114,8 @@ const PickUpListRootPage = () => {
   });
 
   type pickListItems = {
-    categoryId: number;
+    categoryId?: number;
     itemId: number;
-    itemCode: string;
     fireRating?: string;
     size?: string;
     finish?: string;
@@ -112,11 +128,32 @@ const PickUpListRootPage = () => {
 
   const queryClient = useQueryClient();
   const router = useRouter();
+
+  useEffect(() => {
+    if (pickListDataById) {
+      form.reset({
+        referenceNo: pickListDataById.referenceNo,
+        customerId: pickListDataById.customerId,
+        priorityId: pickListDataById.priorityId,
+        requiredDate: new Date(pickListDataById.requiredDate)
+          .toISOString()
+          .split('T')[0],
+      });
+
+      setPickListItems(
+        pickListDataById.pickListItems.map((item) => ({
+          ...item,
+          date: new Date(item.date!).toISOString().split('T')[0],
+        }))
+      );
+    }
+  }, [pickListDataById]);
+
   const mutation = useMutation({
-    mutationFn: createPickList,
+    mutationFn: updatePickList,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PICKLIST_QUERY_KEY });
-      toast.success('Pick list created successfully');
+      toast.success('Pick list updated successfully');
       router.push('/picklist');
     },
     onError: (error: any) => {
@@ -128,7 +165,11 @@ const PickUpListRootPage = () => {
     field: keyof Omit<pickListItems, 'categoryId' | 'itemId'>,
     value: string
   ) => {
-    setPickListItems((prevItems) => prevItems.map((item) => item.itemId === itemId ? { ...item, [field]: value } : item));
+    setPickListItems((prevItems) =>
+      prevItems.map((item) =>
+        item.itemId === itemId ? { ...item, [field]: value } : item
+      )
+    );
   };
 
   const onSubmit = async (values: z.infer<typeof pickListSchema>) => {
@@ -146,7 +187,6 @@ const PickUpListRootPage = () => {
       ...validatedData,
       pickListItems: pickListItemsWithoutCategory,
     };
-
     mutation.mutateAsync(data);
   };
 
@@ -165,7 +205,11 @@ const PickUpListRootPage = () => {
                     <Input
                       placeholder="Enter reference number"
                       {...field}
-                      className={form.formState.errors.referenceNo ? 'border-red-500' : ''}
+                      className={
+                        form.formState.errors.referenceNo
+                          ? 'border-red-500'
+                          : ''
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -222,8 +266,8 @@ const PickUpListRootPage = () => {
                       >
                         {field.value && customerList
                           ? customerList.find(
-                            (customer) => customer.id === field.value
-                          )?.fullName
+                              (customer) => customer.id === field.value
+                            )?.fullName
                           : 'Select Customer'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -279,7 +323,9 @@ const PickUpListRootPage = () => {
               )}
             />
           </div>
-          {isCategotyLoading && (<Loader2Icon className="animate-spin text-primary" />)}
+          {isCategotyLoading && (
+            <Loader2Icon className="animate-spin text-primary" />
+          )}
           {categoryData?.map((c, index) => (
             <div key={index} className="border-b">
               {/* top */}
@@ -310,14 +356,16 @@ const PickUpListRootPage = () => {
                                 <>
                                   {
                                     <CommandItem
-                                      disabled={pickListItems?.some((i) => i.itemId === item.id)}
+                                      disabled={pickListItems?.some(
+                                        (i) => i.itemId === item.id
+                                      )}
                                       onSelect={() =>
-                                        setPickListItems((prev) => [...prev,
-                                        {
-                                          itemId: item.id,
-                                          categoryId: c.key,
-                                          itemCode: item.code
-                                        },
+                                        setPickListItems((prev) => [
+                                          ...prev,
+                                          {
+                                            itemId: item.id,
+                                            categoryId: c.key,
+                                          },
                                         ])
                                       }
                                       key={item.categoryId}
@@ -338,124 +386,126 @@ const PickUpListRootPage = () => {
 
               {/*  additional fields  */}
               <div className="">
-                {pickListItems?.map((item) =>
-                  item.categoryId === c.key && (
-                    <div
-                      key={item.itemId}
-                      className="flex items-center justify-center gap-x-2 py-2"
-                    >
-                      <Button
-                        className="translate-y-3"
-                        variant="destructive"
-                        onClick={() =>
-                          setPickListItems((prev) =>
-                            prev.filter((v) => v.itemId !== item.itemId)
-                          )
-                        }
+                {pickListItems?.map(
+                  (item) =>
+                    item.categoryId === c.key && (
+                      <div
+                        key={item.itemId}
+                        className="flex items-center justify-center gap-x-2 py-2"
                       >
-                        <Trash2Icon />
-                      </Button>
-                      <div className="hidden">
-                        <Label>Id</Label>
-                        <Input value={item.itemId} disabled type="text" />
-                      </div>
-
-                      <div>
-                        <Label>Item Code</Label>
-                        <Input value={item.itemCode} disabled type="text" />
-                      </div>
-
-                      <div className="">
-                        <Label>Fire Rating</Label>
-                        <Input
-                          type="text"
-                          value={item.fireRating || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'fireRating',
-                              e.target.value
+                        <Button
+                          className="translate-y-3"
+                          variant="destructive"
+                          onClick={() =>
+                            setPickListItems((prev) =>
+                              prev.filter((v) => v.itemId !== item.itemId)
                             )
                           }
-                        />
-                      </div>
+                        >
+                          <Trash2Icon />
+                        </Button>
+                        <div className="hidden">
+                          <Label>Id</Label>
+                          <Input value={item.itemId} disabled type="text" />
+                        </div>
 
-                      <div className="">
-                        <Label>Size</Label>
-                        <Input
-                          type="text"
-                          value={item.size || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'size',
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                        <div className="">
+                          <Label>Fire Rating</Label>
+                          <Input
+                            type="text"
+                            placeholder="fireRating"
+                            value={item.fireRating || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'fireRating',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                      <div className="">
-                        <Label>Finish</Label>
-                        <Input
-                          type="text"
-                          value={item.finish || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'finish',
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                        <div className="">
+                          <Label>Size</Label>
+                          <Input
+                            type="text"
+                            placeholder="size"
+                            value={item.size || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'size',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                      <div className="">
-                        <Label>Order</Label>
-                        <Input
-                          type="number"
-                          value={item.order || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'order',
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                        <div className="">
+                          <Label>Finish</Label>
+                          <Input
+                            type="text"
+                            placeholder="finish"
+                            value={item.finish || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'finish',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                      <div className="">
-                        <Label>Date</Label>
-                        <Input
-                          type="date"
-                          value={item.date || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'date',
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                        <div className="">
+                          <Label>Order</Label>
+                          <Input
+                            type="text"
+                            placeholder="order"
+                            value={item.order || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'order',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                      <div className="">
-                        <Label>Notes</Label>
-                        <Input
-                          type="text"
-                          value={item.notes || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'notes',
-                              e.target.value
-                            )
-                          }
-                        />
+                        <div className="">
+                          <Label>Date</Label>
+                          <Input
+                            type="date"
+                            placeholder="date"
+                            value={item.date || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'date',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="">
+                          <Label>Notes</Label>
+                          <Input
+                            type="text"
+                            placeholder="notes"
+                            value={item.notes || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'notes',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )
+                    )
                 )}
               </div>
             </div>
@@ -473,4 +523,4 @@ const PickUpListRootPage = () => {
   );
 };
 
-export default PickUpListRootPage;
+export default PickUpListEditPage;

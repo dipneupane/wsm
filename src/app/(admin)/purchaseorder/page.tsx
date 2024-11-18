@@ -34,19 +34,6 @@ export default function Component() {
     queryKey: ['PurchaseOrder'],
     queryFn: getAllPurchaseOrderInformation,
   });
-  console.log(data);
-  // const data = [
-  //   {
-  //     id: 1,
-  //     poNumber: 'PO-2024-001',
-  //     supplier: 'Supplier A',
-  //     createdDate: '2024-11-17T05:09:11.877',
-  //     itemsCount: 2,
-  //     total: 10500,
-  //     status: 'Pending',
-  //     statusId: 2,
-  //   },
-  // ];
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -84,7 +71,7 @@ export default function Component() {
   return (
     <div className="container mx-auto flex flex-col gap-y-5 py-10">
       <Button asChild className="ms-auto">
-        <Link href={'/purchaseorder/add'}>Add Purchase Order</Link>
+        <Link href="/purchaseorder/add">Add Purchase Order</Link>
       </Button>
       <Table>
         <TableHeader>
@@ -128,6 +115,9 @@ export default function Component() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <Link href={`purchaseorder/${item.id}`}>
+                      <DropdownMenuItem>Edit</DropdownMenuItem>
+                    </Link>
                     <DropdownMenuItem onClick={() => handleDownload(item.id)}>
                       Download PDF
                     </DropdownMenuItem>

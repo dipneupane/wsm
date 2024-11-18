@@ -4,11 +4,6 @@ export const navigationSiteMap: SiteMap = {
   admin: {
     rootUrl: '/',
     subPaths: {
-      dashboard: {
-        path: '/',
-        icon: 'dashboard',
-        visible: true,
-      },
       inventory: {
         path: '/inventory',
         icon: 'inventory',

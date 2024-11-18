@@ -1,10 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { createPurchaseOrder } from '@/services/purchase-order';
+import {
+  getPurchaseOrderById,
+  updatePurchaseOrder,
+} from '@/services/purchase-order';
 import { getAllSupplierInformation } from '@/services/supplier';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +16,10 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { SUPPLIER_QUERY_KEY } from '@/config/query-keys';
+import {
+  PURCHASEORDER_QUERY_KEY,
+  SUPPLIER_QUERY_KEY,
+} from '@/config/query-keys';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -47,38 +53,65 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-// Create the Zod schema
+// Validation schema
 const purchaseOrderSchema = z.object({
-  poNumber: z.string().min(1, 'PO number is required'),
-  supplierId: z.number().int().positive('Please select a valid supplier'),
-  orderDate: z.string().min(1, 'Order date is required'),
-  requiredByDate: z.string().min(1, 'Required by date is required'),
-  paymentTerm: z.string().min(1, 'Payment term is required'),
-  statusId: z.number().int().positive('Status ID is required'),
+  poNumber: z.string().min(1, 'PO Number is required'),
+  supplierId: z.number().int().positive('Supplier is required'),
+  orderDate: z.string().min(1, 'Order Date is required'),
+  requiredByDate: z.string().min(1, 'Required By Date is required'),
+  paymentTerm: z.string().min(1, 'Payment Term is required'),
+  statusId: z.number().int().positive('Status is required'),
 });
+
+interface PurchaseOrderEditProps {
+  params: {
+    slug: string;
+  };
+}
 
 const STATUS = {
   Draft: 1,
   Ordered: 2,
   Received: 3,
-} as const;
+};
 
-const PurchaseOrderRootPage = () => {
+const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
+  params: { slug },
+}) => {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
+  // Fetch purchase order details
+  const {
+    data: purchaseOrderData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: [PURCHASEORDER_QUERY_KEY[0], slug],
+    queryFn: () => getPurchaseOrderById(Number(slug)),
+    enabled: !!slug,
+  });
 
-  type PurchaseOrderItems = {
-    id: number;
-    itemId: string;
-    description: string;
-    quantity: string;
-    unitPrice: string;
-  };
+  // Fetch supplier information
+  const { data: supplierList } = useQuery({
+    queryKey: SUPPLIER_QUERY_KEY,
+    queryFn: getAllSupplierInformation,
+  });
 
-  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<
-    PurchaseOrderItems[]
-  >([]);
+  // Update mutation
+  const mutation = useMutation({
+    mutationFn: updatePurchaseOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PURCHASEORDER_QUERY_KEY });
+      toast.success('Purchase Order updated successfully');
+      router.push('/purchaseorder');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Error updating Purchase Order');
+    },
+  });
 
-  // Initialize form with Zod resolver
+  // Form setup
   const form = useForm<z.infer<typeof purchaseOrderSchema>>({
     resolver: zodResolver(purchaseOrderSchema),
     defaultValues: {
@@ -91,68 +124,102 @@ const PurchaseOrderRootPage = () => {
     },
   });
 
-  // Query hooks
-  const { data: supplierList } = useQuery({
-    queryKey: SUPPLIER_QUERY_KEY,
-    queryFn: getAllSupplierInformation,
-  });
-  const queryClient = useQueryClient();
-  const router = useRouter();
-  const mutation = useMutation({
-    mutationFn: createPurchaseOrder,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SUPPLIER_QUERY_KEY });
-      toast.success('Purchase order created successfully');
-      router.push('/purchaseorder');
-    },
-    onError: (error: any) => {
-      toast.error(error.message);
-    },
-  });
+  const [purchaseOrderItems, setPurchaseOrderItems] = useState<
+    Array<{
+      id: number;
+      description: string;
+      quantity: string;
+      unitPrice: string;
+      itemId: string;
+      isNew?: boolean;
+      tempId?: number;
+    }>
+  >([]);
 
+  // Prefill data when fetched
+  useEffect(() => {
+    if (purchaseOrderData) {
+      form.reset({
+        poNumber: purchaseOrderData.poNumber,
+        supplierId: purchaseOrderData.supplierId,
+        orderDate: purchaseOrderData.orderDate.split('T')[0],
+        requiredByDate: purchaseOrderData.requiredByDate.split('T')[0],
+        paymentTerm: purchaseOrderData.paymentTerm,
+        statusId: purchaseOrderData.statusId,
+      });
+      setPurchaseOrderItems(purchaseOrderData.purchaseOrderItems || []);
+    }
+  }, [purchaseOrderData, form]);
+
+  // Add new item
   const handleAddItem = () => {
     setPurchaseOrderItems((prev) => [
       ...prev,
       {
-        id: Date.now(),
+        id: 0,
         itemId: '',
         description: '',
         quantity: '',
         unitPrice: '',
+        isNew: true,
+        tempId: prev.length + 1,
       },
     ]);
   };
 
+  // Remove item
   const handleRemoveItem = (id: number) => {
-    setPurchaseOrderItems((prev) => prev.filter((item) => item.id !== id));
+    setPurchaseOrderItems((prev) => prev.filter((_, idx) => idx !== id));
   };
 
-  const handleChange = (id: number, field: string, value: string) => {
-    setPurchaseOrderItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
-    );
+  // Update item
+  const handleItemChange = (
+    id: number,
+    field: string,
+    value: string | number,
+    tempId?: number
+  ) => {
+    setPurchaseOrderItems((prev: any) => {
+      return prev.map((item: any) => {
+        if (item.isNew) {
+          return item.tempId === tempId ? { ...item, [field]: value } : item;
+        }
+        return item.id === id ? { ...item, [field]: value } : item;
+      });
+    });
   };
 
+  // Submit form
   const onSubmit = async (values: z.infer<typeof purchaseOrderSchema>) => {
-    const validatedData = purchaseOrderSchema.parse(values);
-    const formattedPurchaseOrderItems = purchaseOrderItems.map((p) => ({
-      itemId: Number(p.itemId),
-      description: p.description,
-      quantity: Number(p.quantity),
-      unitPrice: Number(p.unitPrice),
-    }));
-
-    const data = {
-      ...validatedData,
-      purchaseOrderItems: formattedPurchaseOrderItems,
+    let currentSlug = Number(slug);
+    const updatedPurchaseOrder = {
+      ...values,
+      id: currentSlug,
+      purchaseOrderItems: purchaseOrderItems.map((item) => ({
+        id: Number(item.id),
+        itemId: Number(item.itemId),
+        purchaseOrderId: currentSlug,
+        description: item.description,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+      })),
     };
-    mutation.mutateAsync(data);
+    mutation.mutateAsync(updatedPurchaseOrder);
   };
+
+  if (isLoading)
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  if (isError) return <div>Error fetching Purchase Order data</div>;
+
   return (
-    <>
-      <h2 className="text-xl font-bold">Purchase Order Details</h2>
+    <div>
+      <h2 className="text-xl font-bold">Edit Purchase Order</h2>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             <FormField
               control={form.control}
@@ -162,8 +229,8 @@ const PurchaseOrderRootPage = () => {
                   <FormLabel>PO Number</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter PO number"
                       {...field}
+                      placeholder="Enter PO number"
                       className={
                         form.formState.errors.poNumber ? 'border-red-500' : ''
                       }
@@ -173,7 +240,6 @@ const PurchaseOrderRootPage = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="supplierId"
@@ -189,7 +255,7 @@ const PurchaseOrderRootPage = () => {
                       >
                         {field.value && supplierList
                           ? supplierList.find(
-                              (supplier) => supplier.id === field.value
+                              (supplier: any) => supplier.id === field.value
                             )?.fullName
                           : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -243,13 +309,12 @@ const PurchaseOrderRootPage = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="requiredByDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Required By</FormLabel>
+                  <FormLabel>Required By Date</FormLabel>
                   <FormControl>
                     <Input
                       type="date"
@@ -265,13 +330,12 @@ const PurchaseOrderRootPage = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="paymentTerm"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Payment Terms</FormLabel>
+                  <FormLabel>Payment Term</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Net 30"
@@ -287,7 +351,6 @@ const PurchaseOrderRootPage = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="statusId"
@@ -296,14 +359,16 @@ const PurchaseOrderRootPage = () => {
                   <FormLabel>Status</FormLabel>
                   <Select
                     onValueChange={(value) => field.onChange(Number(value))}
-                    value={field.value ? field.value.toString() : undefined}
+                    value={
+                      field.value ? Number(field.value).toString() : undefined
+                    }
                   >
                     <SelectTrigger
                       className={
                         form.formState.errors.statusId ? 'border-red-500' : ''
                       }
                     >
-                      <SelectValue placeholder="Select priority" />
+                      <SelectValue placeholder="Select Status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={STATUS.Draft.toString()}>
@@ -317,6 +382,7 @@ const PurchaseOrderRootPage = () => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+
                   <FormMessage />
                 </FormItem>
               )}
@@ -324,6 +390,7 @@ const PurchaseOrderRootPage = () => {
           </div>
 
           <div className="my-10">
+            <h3>Items</h3>
             <div className="flex justify-between">
               <h2 className="text-xl font-bold">Order Items</h2>
               <Button type="button" onClick={handleAddItem}>
@@ -331,64 +398,85 @@ const PurchaseOrderRootPage = () => {
               </Button>
             </div>
             <div>
-              {purchaseOrderItems.map((item) => (
+              {purchaseOrderItems.map((item, idx) => (
                 <div
-                  key={item.id}
+                  key={idx}
                   className="mb-4 flex flex-wrap items-center gap-4"
                 >
                   <div>
-                    <Label htmlFor={`itemId-${item.id}`}>Item ID</Label>
+                    <Label htmlFor={`itemId-${idx}`}>Item ID</Label>
                     <Input
                       type="number"
-                      id={`itemId-${item.id}`}
+                      id={`itemId-${idx}`}
                       value={item.itemId}
                       onChange={(e) =>
-                        handleChange(item.id, 'itemId', e.target.value)
+                        handleItemChange(
+                          item.id,
+                          'itemId',
+                          e.target.value,
+                          idx + 1
+                        )
                       }
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`description-${item.id}`}>
-                      Description
-                    </Label>
+                    <Label htmlFor={`description-${idx}`}>Description</Label>
                     <Input
                       type="text"
-                      id={`description-${item.id}`}
+                      id={`description-${idx}`}
+                      placeholder="Description"
                       value={item.description}
                       onChange={(e) =>
-                        handleChange(item.id, 'description', e.target.value)
+                        handleItemChange(
+                          item.id,
+                          'description',
+                          e.target.value,
+                          idx + 1
+                        )
                       }
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
+                    <Label htmlFor={`quantity-${idx}`}>Quantity</Label>
                     <Input
-                      id={`quantity-${item.id}`}
+                      id={`quantity-${idx}`}
                       type="number"
+                      placeholder="Quantity"
                       value={item.quantity}
                       onChange={(e) =>
-                        handleChange(item.id, 'quantity', e.target.value)
+                        handleItemChange(
+                          item.id,
+                          'quantity',
+                          e.target.value,
+                          idx + 1
+                        )
                       }
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`unitPrice-${item.id}`}>Unit Price</Label>
+                    <Label htmlFor={`unitPrice-${idx}`}>Unit Price</Label>
+
                     <Input
-                      id={`unitPrice-${item.id}`}
+                      id={`unitPrice-${idx}`}
                       type="number"
+                      placeholder="Unit Price"
                       value={item.unitPrice}
                       onChange={(e) =>
-                        handleChange(item.id, 'unitPrice', e.target.value)
+                        handleItemChange(
+                          item.id,
+                          'unitPrice',
+                          e.target.value,
+                          idx + 1
+                        )
                       }
                     />
                   </div>
-
                   <div>
                     <Button
                       variant="destructive"
                       type="button"
                       className="px-5"
-                      onClick={() => handleRemoveItem(item.id)}
+                      onClick={() => handleRemoveItem(idx)}
                     >
                       <Trash2 />
                     </Button>
@@ -399,15 +487,15 @@ const PurchaseOrderRootPage = () => {
           </div>
           <Button
             type="submit"
-            className="w-full py-5 font-bold text-black"
             disabled={mutation.isPending}
+            className="w-full py-5 font-bold text-black"
           >
-            {mutation.isPending ? 'Submitting...' : 'Add Purchase Order'}
+            {mutation.isPending ? 'Updating...' : 'Update Purchase Order'}
           </Button>
         </form>
       </Form>
-    </>
+    </div>
   );
 };
 
-export default PurchaseOrderRootPage;
+export default PurchaseOrderEdit;

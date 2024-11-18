@@ -70,7 +70,7 @@ export default function AppSidebar({
                   rootPath.subPaths[key].visible && (
                     <Link
                       key={key}
-                      className={`flex items-center gap-x-2 ${rootPath.subPaths[key].path === pathname ? 'text-primary' : ''} `}
+                      className={`flex items-center gap-x-2 ${(rootPath.subPaths[key].path === '/' ? pathname === '/' : pathname.startsWith(rootPath.subPaths[key].path)) ? 'text-primary' : ''}`}
                       href={rootPath.subPaths[key].path}
                     >
                       <SidebarMenuButton key={key} tooltip={key}>
