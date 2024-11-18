@@ -1,19 +1,14 @@
 'use client';
 
 import React from 'react';
-
 import Link from 'next/link';
-
 import { deleteInventoryItem } from '@/services/inventory-item';
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Row } from '@tanstack/react-table';
 import { toast } from 'sonner';
-
 import { InventoryItemGetByIdType } from '@/types/inventory-items';
-
 import { INVENTORY_QUERY_KEY } from '@/config/query-keys';
-
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

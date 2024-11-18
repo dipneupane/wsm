@@ -86,9 +86,9 @@ export default function GenericTable<T>({
                   {header.isPlaceholder
                     ? null
                     : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
                 </TableHead>
               ))}
             </TableRow>
@@ -96,18 +96,17 @@ export default function GenericTable<T>({
         </TableHeader>
         <TableBody>
           {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                className="border-slate-400/60 dark:border-slate-400/20"
-                key={row.id}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            table.getRowModel().rows.map((row: any) => {
+              return (
+                <TableRow className={`border-slate-400/60 dark:border-slate-400/20 ${row.original?.stock < 10 ? 'bg-red-100 text-red-600' : 'bg-white text-black'}`} key={row.id}>
+                  {row.getVisibleCells().map((cell: any) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              )
+            })
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">

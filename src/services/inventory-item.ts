@@ -1,16 +1,11 @@
 import { ApiResponse } from '@/types';
-
 import {
   InventoryItemCreateType,
   InventoryItemGetByIdType,
   InventoryItemsGetAllType,
   InventoryItemUpdateType,
 } from '@/types/inventory-items';
-
-import {
-  apiClientWithClientHeader,
-  apiClientWithoutHeader,
-} from '@/lib/axios-config';
+import { apiClientWithClientHeader } from '@/lib/axios-config';
 
 export const getAllInventoryItems = async (): Promise<
   InventoryItemsGetAllType[] | undefined

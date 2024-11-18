@@ -21,7 +21,11 @@ export const columns: ColumnDef<InventoryItemsGetAllType>[] = [
   },
   {
     accessorKey: 'cost',
-    header: '$ Cost',
+    header: 'Cost',
+  },
+  {
+    accessorKey: 'stock',
+    header: 'Stock'
   },
   {
     accessorKey: 'supplierName',

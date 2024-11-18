@@ -80,7 +80,7 @@ export default function EditInventoryItemForm({
     mutationFn: editInventoryItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: INVENTORY_QUERY_KEY });
-      toast.success(' Inventory Item created successfully');
+      toast.success('Inventory Item updated successfully');
       router.push('/inventory');
     },
     onError: (error) => {
@@ -203,8 +203,8 @@ export default function EditInventoryItemForm({
                         >
                           {field.value && categoryData?.data
                             ? categoryData?.data.find(
-                                (d) => d.key === field.value
-                              )?.value
+                              (d) => d.key === field.value
+                            )?.value
                             : 'Select Category'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -267,8 +267,8 @@ export default function EditInventoryItemForm({
                         >
                           {field.value && supplierData?.data
                             ? supplierData?.data.find(
-                                (s) => s.id === field.value
-                              )?.fullName
+                              (s) => s.id === field.value
+                            )?.fullName
                             : 'Select Supplier'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>

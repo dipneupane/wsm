@@ -1,8 +1,5 @@
 import { InventoryItemsGetAllType } from '@/types/inventory-items';
-import { SupplierGetAllType } from '@/types/supplier';
-
 import DataTable from '@/components/generic-table/generic-table';
-
 import { columns } from './column';
 
 interface IUsersTableProps {

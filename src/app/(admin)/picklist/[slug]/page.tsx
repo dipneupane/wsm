@@ -1,14 +1,11 @@
 'use client';
 
 import React, { useEffect } from 'react';
-
 import { useRouter } from 'next/navigation';
-
 import { getAllCategories } from '@/services/categories';
 import { getAllCustomerInformation } from '@/services/customer';
 import { getAllInventoryItems } from '@/services/inventory-item';
 import {
-  createPickList,
   getPickListById,
   updatePickList,
 } from '@/services/pick-list';
@@ -66,6 +63,7 @@ const PriorityLevel = {
 
 // Create the Zod schema
 const pickListSchema = z.object({
+  id: z.number(),
   referenceNo: z.string().min(1, 'Reference number is required'),
   customerId: z.number().int().positive('Please select a customer'),
   priorityId: z.number().int(),
@@ -90,6 +88,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   const form = useForm<z.infer<typeof pickListSchema>>({
     resolver: zodResolver(pickListSchema),
     defaultValues: {
+      id: pickListDataById?.id,
       referenceNo: pickListDataById?.referenceNo,
       customerId: pickListDataById?.customerId,
       priorityId: pickListDataById?.priorityId,
@@ -116,6 +115,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   type pickListItems = {
     categoryId?: number;
     itemId: number;
+    itemCode: string;
     fireRating?: string;
     size?: string;
     finish?: string;
@@ -129,11 +129,10 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  //   console.log(pickListDataById);
-
   useEffect(() => {
     if (pickListDataById) {
       form.reset({
+        id: pickListDataById.id,
         referenceNo: pickListDataById.referenceNo,
         customerId: pickListDataById.customerId,
         priorityId: pickListDataById.priorityId,
@@ -142,12 +141,8 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
           .split('T')[0],
       });
 
-      setPickListItems(
-        pickListDataById.pickListItems.map((item) => ({
-          ...item,
-          date: new Date(item.date!).toISOString().split('T')[0],
-        }))
-      );
+      setPickListItems(pickListDataById.pickListItems.map((item) =>
+        ({ ...item, itemCode: item.itemCode, date: new Date(item.date!).toISOString().split('T')[0] })));
     }
   }, [pickListDataById]);
 
@@ -175,6 +170,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   };
 
   const onSubmit = async (values: z.infer<typeof pickListSchema>) => {
+    debugger;
     const validatedData = pickListSchema.parse(values);
     const pickListItemsWithoutCategory = pickListItems.map((p) => ({
       itemId: p.itemId,
@@ -185,10 +181,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
       date: p.date ?? new Date(Date.now()).toISOString(),
       notes: p.notes,
     }));
-    const data = {
-      ...validatedData,
-      pickListItems: pickListItemsWithoutCategory,
-    };
+    const data = { ...validatedData, pickListItems: pickListItemsWithoutCategory };
     mutation.mutateAsync(data);
   };
 
@@ -268,8 +261,8 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                       >
                         {field.value && customerList
                           ? customerList.find(
-                              (customer) => customer.id === field.value
-                            )?.fullName
+                            (customer) => customer.id === field.value
+                          )?.fullName
                           : 'Select Customer'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -352,32 +345,32 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                       <CommandEmpty>No items found.</CommandEmpty>
                       <CommandGroup>
                         <ScrollArea className="h-64">
-                          {inventoryItemsList?.map(
-                            (item) =>
-                              item.categoryId === c.key && (
-                                <>
-                                  {
-                                    <CommandItem
-                                      disabled={pickListItems?.some(
-                                        (i) => i.itemId === item.id
-                                      )}
-                                      onSelect={() =>
-                                        setPickListItems((prev) => [
-                                          ...prev,
-                                          {
-                                            itemId: item.id,
-                                            categoryId: c.key,
-                                          },
-                                        ])
-                                      }
-                                      key={item.categoryId}
-                                    >
-                                      {item.categoryId}-{item.id} -{item.code} -{' '}
-                                      {item.description}
-                                    </CommandItem>
-                                  }
-                                </>
-                              )
+                          {inventoryItemsList?.map((item) =>
+                            item.categoryId === c.key && (
+                              <>
+                                {
+                                  <CommandItem
+                                    disabled={pickListItems?.some(
+                                      (i) => i.itemId === item.id
+                                    )}
+                                    onSelect={() =>
+                                      setPickListItems((prev) => [
+                                        ...prev,
+                                        {
+                                          itemId: item.id,
+                                          categoryId: c.key,
+                                          itemCode: item.code
+                                        },
+                                      ])
+                                    }
+                                    key={item.categoryId}
+                                  >
+                                    {item.categoryId}-{item.id} -{item.code} -{' '}
+                                    {item.description}
+                                  </CommandItem>
+                                }
+                              </>
+                            )
                           )}
                         </ScrollArea>
                       </CommandGroup>
@@ -411,11 +404,15 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                           <Input value={item.itemId} disabled type="text" />
                         </div>
 
+                        <div>
+                          <Label>Item Code</Label>
+                          <Input value={item.itemCode} disabled type="text" />
+                        </div>
+
                         <div className="">
                           <Label>Fire Rating</Label>
                           <Input
                             type="text"
-                            placeholder="fireRating"
                             value={item.fireRating || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -431,7 +428,6 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                           <Label>Size</Label>
                           <Input
                             type="text"
-                            placeholder="size"
                             value={item.size || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -447,7 +443,6 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                           <Label>Finish</Label>
                           <Input
                             type="text"
-                            placeholder="finish"
                             value={item.finish || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -463,7 +458,6 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                           <Label>Order</Label>
                           <Input
                             type="text"
-                            placeholder="order"
                             value={item.order || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -479,7 +473,6 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                           <Label>Date</Label>
                           <Input
                             type="date"
-                            placeholder="date"
                             value={item.date || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -495,7 +488,6 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                           <Label>Notes</Label>
                           <Input
                             type="text"
-                            placeholder="notes"
                             value={item.notes || ''}
                             onChange={(e) =>
                               handleItemFieldChange(

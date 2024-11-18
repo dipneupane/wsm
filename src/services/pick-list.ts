@@ -59,13 +59,9 @@ export const downloadPickListProductionSheet = async (id: number) => {
   }
 };
 
-export const getPickListById = async (
-  id: number
-): Promise<PickListGetByIdType> => {
+export const getPickListById = async (id: number): Promise<PickListGetByIdType> => {
   try {
-    const { data } = await apiClientWithClientHeader.get<ApiResponse<any>>(
-      `/PickList/GetById?id=${id}`
-    );
+    const { data } = await apiClientWithClientHeader.get<ApiResponse<any>>(`/PickList/GetById?id=${id}`);
 
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');
