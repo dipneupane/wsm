@@ -11,7 +11,7 @@ import {
 import { getPurchaseOrderById } from '@/services/purchase-order';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Download, DownloadIcon, Edit2Icon } from 'lucide-react';
+import { Download, DownloadIcon, Edit2Icon, Loader2Icon } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,20 +54,8 @@ export default function ViewPickupListItems({
   const generatePDF = async (purchaseOrderID: number) => {
     setIsDownloading(true);
     try {
-      //   const { blob, filename } =
-      //     await downloadPickListProductionSheet(pickListID);
-      //   // Create a Blob URL
-      //   const blobUrl = window.URL.createObjectURL(new Blob([blob]));
-      //   const link = document.createElement('a');
-      //   link.href = blobUrl;
-      //   link.setAttribute('download', filename); // Use the extracted filename
-      //   document.body.appendChild(link);
-      //   link.click();
-      //   // Cleanup
-      //   link.remove();
-      //   window.URL.revokeObjectURL(blobUrl);
       const response = await fetch(
-        `https://doorsets-api.codenp.com/PurchaseOrder/DownloadPurchaseOrder?id=${purchaseOrderID}`
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/PurchaseOrder/DownloadPurchaseOrder?id=${purchaseOrderID}`
       );
 
       if (!response.ok) {
@@ -90,8 +78,8 @@ export default function ViewPickupListItems({
 
   if (isLoading)
     return (
-      <div className="flex h-screen items-center justify-center">
-        Loading...
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   if (error)
@@ -113,8 +101,8 @@ export default function ViewPickupListItems({
               <p>{purchaseOrderData.poNumber}</p>
             </div>
             <div>
-              <p className="font-semibold">Supplier ID:</p>
-              <p>{purchaseOrderData.supplierId}</p>
+              <p className="font-semibold">Supplier:</p>
+              <p>{purchaseOrderData.supplierName}</p>
             </div>
             <div>
               <p className="font-semibold">Status:</p>
@@ -158,7 +146,7 @@ export default function ViewPickupListItems({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Item ID</TableHead>
+                <TableHead>Item Code</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Quantity</TableHead>
                 <TableHead>Unit Price</TableHead>
@@ -169,7 +157,7 @@ export default function ViewPickupListItems({
               {purchaseOrderData.purchaseOrderItems.map(
                 (item: any, index: any) => (
                   <TableRow key={index}>
-                    <TableCell>{item.itemId}</TableCell>
+                    <TableCell>{item?.itemCode || 'N/A'}</TableCell>
                     <TableCell>{item.description || 'N/A'}</TableCell>
                     <TableCell>{item.quantity || 'N/A'}</TableCell>
                     <TableCell>{item.unitPrice || 'N/A'}</TableCell>

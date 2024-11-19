@@ -11,30 +11,20 @@ import ActionCellComponent from './action';
 
 export const columns: ColumnDef<InventoryItemsGetAllType>[] = [
   {
-    accessorKey: 'id',
-    header: 'Id',
+    accessorKey: 'supplierName',
+    header: 'Supplier',
+  },
+  {
+    accessorKey: 'categoryName',
+    header: 'Category',
+  },
+  {
+    accessorKey: 'description',
+    header: 'Description',
   },
   {
     accessorKey: 'code',
     header: 'Code',
-  },
-  {
-    accessorKey: 'categoryName',
-    header: 'Category Name',
-  },
-  {
-    accessorKey: 'cost',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Cost
-          <ArrowUpDown />
-        </Button>
-      );
-    },
   },
   {
     accessorKey: 'stock',
@@ -51,12 +41,18 @@ export const columns: ColumnDef<InventoryItemsGetAllType>[] = [
     },
   },
   {
-    accessorKey: 'supplierName',
-    header: 'Supplier Name',
-  },
-  {
-    accessorKey: 'description',
-    header: 'Description',
+    accessorKey: 'cost',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Cost
+          <ArrowUpDown />
+        </Button>
+      );
+    },
   },
   {
     accessorKey: 'minStockQuantity',
@@ -66,7 +62,7 @@ export const columns: ColumnDef<InventoryItemsGetAllType>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Min Stock Quantity
+          Min. Stock Quantity
           <ArrowUpDown />
         </Button>
       );

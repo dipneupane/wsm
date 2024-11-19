@@ -52,11 +52,8 @@ const formSchema = z.object({
   categoryId: z.number(),
   supplierId: z.number(),
   stock: z.string().transform((v) => Number(v)),
-  minStockQuantity: z.string().transform((v) => Number(v)),
-  reorderLevel: z
-    .string()
-    .transform((v) => Number(v))
-    .optional(),
+  minStockQuantity: z.any(),
+  reorderLevel: z.any().optional(),
 });
 
 export default function AddInventoryItemForm({}: {}) {
@@ -162,7 +159,7 @@ export default function AddInventoryItemForm({}: {}) {
               name="categoryId"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>CategoryID</FormLabel>
+                  <FormLabel>Category</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -226,7 +223,7 @@ export default function AddInventoryItemForm({}: {}) {
               name="supplierId"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Suppiler ID</FormLabel>
+                  <FormLabel>Suppiler</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -249,7 +246,7 @@ export default function AddInventoryItemForm({}: {}) {
                     </PopoverTrigger>
                     <PopoverContent className="w-[200px] p-0">
                       <Command>
-                        <CommandInput placeholder="Search language..." />
+                        <CommandInput placeholder="Search ..." />
                         <CommandList>
                           <CommandEmpty>No Category found.</CommandEmpty>
                           <CommandGroup>
@@ -321,7 +318,7 @@ export default function AddInventoryItemForm({}: {}) {
           name="reorderLevel"
           render={({ field }) => (
             <FormItem>
-              <FormLabel> Reorder Level</FormLabel>
+              <FormLabel> Reorder Level (Optional)</FormLabel>
               <FormControl>
                 <Input placeholder="eg:10" type="number" {...field} />
               </FormControl>

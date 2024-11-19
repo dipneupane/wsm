@@ -71,7 +71,7 @@ const PurchaseOrderRootPage = () => {
     itemId: number;
     itemCode: string;
     description: string;
-    quantity: string;
+    quantity: number;
     unitPrice: number;
   };
 
@@ -135,8 +135,32 @@ const PurchaseOrderRootPage = () => {
     field: string,
     value: string
   ) => {
-    setPurchaseOrderItems((prevItems: any) =>
-      prevItems.map((item: any) =>
+    if (field === 'quantity' || field === 'unitPrice') {
+      // Allow empty string
+      if (value === '') {
+        setPurchaseOrderItems((prevItems) =>
+          prevItems.map((item) =>
+            item.itemId === itemId ? { ...item, [field]: '' } : item
+          )
+        );
+        return;
+      }
+
+      // Allow valid numeric input (including floats like "1.", "1.5")
+      const isValidNumber = /^(\d+\.?\d*|\.\d+)$/.test(value);
+      if (!isValidNumber) return;
+
+      setPurchaseOrderItems((prevItems) =>
+        prevItems.map((item) =>
+          item.itemId === itemId ? { ...item, [field]: value } : item
+        )
+      );
+      return;
+    }
+
+    // Handle other fields
+    setPurchaseOrderItems((prevItems) =>
+      prevItems.map((item) =>
         item.itemId === itemId ? { ...item, [field]: value } : item
       )
     );
@@ -419,11 +443,8 @@ const PurchaseOrderRootPage = () => {
                     <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
                     <Input
                       id={`quantity-${item.id}`}
-                      type="text"
-                      required
-                      step="1"
-                      pattern="\d+"
-                      value={item.quantity.toString()}
+                      type="number"
+                      value={item.quantity}
                       onChange={(e) =>
                         handleItemFieldChange(
                           item.itemId,

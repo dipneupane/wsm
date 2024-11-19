@@ -58,11 +58,8 @@ const formSchema = z.object({
   categoryId: z.number(),
   supplierId: z.number(),
   stock: z.any(),
-  minStockQuantity: z.string().transform((v) => Number(v)),
-  reorderLevel: z
-    .string()
-    .transform((v) => Number(v))
-    .optional(),
+  minStockQuantity: z.any(),
+  reorderLevel: z.any().optional(),
 });
 
 export default function EditInventoryItemForm({
@@ -196,7 +193,7 @@ export default function EditInventoryItemForm({
               name="categoryId"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>CategoryID</FormLabel>
+                  <FormLabel>Category</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -260,7 +257,7 @@ export default function EditInventoryItemForm({
               name="supplierId"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Suppiler ID</FormLabel>
+                  <FormLabel>Suppiler </FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -355,7 +352,7 @@ export default function EditInventoryItemForm({
           name="reorderLevel"
           render={({ field }) => (
             <FormItem>
-              <FormLabel> Reorder Level</FormLabel>
+              <FormLabel> Reorder Level (Optional)</FormLabel>
               <FormControl>
                 <Input placeholder="eg:10" type="number" {...field} />
               </FormControl>

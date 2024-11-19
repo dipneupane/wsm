@@ -135,8 +135,8 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     itemId: number;
     itemCode: string;
     description: string;
-    quantity: string;
-    unitPrice: string;
+    quantity: number;
+    unitPrice: number;
   };
 
   const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<
@@ -176,8 +176,32 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     field: string,
     value: string
   ) => {
-    setPurchaseOrderItems((prevItems: any) =>
-      prevItems.map((item: any) =>
+    if (field === 'quantity' || field === 'unitPrice') {
+      // Allow empty string
+      if (value === '') {
+        setPurchaseOrderItems((prevItems) =>
+          prevItems.map((item) =>
+            item.itemId === itemId ? { ...item, [field]: '' } : item
+          )
+        );
+        return;
+      }
+
+      // Allow valid numeric input (including floats like "1.", "1.5")
+      const isValidNumber = /^(\d+\.?\d*|\.\d+)$/.test(value);
+      if (!isValidNumber) return;
+
+      setPurchaseOrderItems((prevItems) =>
+        prevItems.map((item) =>
+          item.itemId === itemId ? { ...item, [field]: value } : item
+        )
+      );
+      return;
+    }
+
+    // Handle other fields
+    setPurchaseOrderItems((prevItems) =>
+      prevItems.map((item) =>
         item.itemId === itemId ? { ...item, [field]: value } : item
       )
     );
@@ -445,7 +469,11 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
 
                   <div>
                     <Label>Item Code</Label>
-                    <Input value={item.itemCode} disabled type="text" />
+                    <Input
+                      value={item.itemCode || 'N/A'}
+                      disabled
+                      type="text"
+                    />
                   </div>
 
                   <div>
@@ -470,11 +498,9 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                     <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
                     <Input
                       id={`quantity-${item.id}`}
-                      type="text"
+                      type="number"
                       required
-                      step="1"
-                      pattern="\d+"
-                      value={item.quantity.toString()}
+                      value={item.quantity}
                       onChange={(e) =>
                         handleItemFieldChange(
                           item.itemId,
