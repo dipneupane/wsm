@@ -1,11 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import { getAllInventoryItems } from '@/services/inventory-item';
-import { createPurchaseOrder } from '@/services/purchase-order';
+import {
+  getPurchaseOrderById,
+  updatePurchaseOrder,
+} from '@/services/purchase-order';
 import { getAllSupplierInformation } from '@/services/supplier';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +17,11 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { INVENTORY_QUERY_KEY, SUPPLIER_QUERY_KEY } from '@/config/query-keys';
+import {
+  INVENTORY_QUERY_KEY,
+  PURCHASEORDER_QUERY_KEY,
+  SUPPLIER_QUERY_KEY,
+} from '@/config/query-keys';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -48,47 +55,43 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-// Create the Zod schema
+// Validation schema
 const purchaseOrderSchema = z.object({
-  poNumber: z.string().min(1, 'PO number is required'),
-  supplierId: z.number().int().positive('Please select a valid supplier'),
-  orderDate: z.string().min(1, 'Order date is required'),
-  requiredByDate: z.string().min(1, 'Required by date is required'),
-  paymentTerm: z.string().min(1, 'Payment term is required'),
-  statusId: z.number().int().positive('Status ID is required'),
+  poNumber: z.string().min(1, 'PO Number is required'),
+  supplierId: z.number().int().positive('Supplier is required'),
+  orderDate: z.string().min(1, 'Order Date is required'),
+  requiredByDate: z.string().min(1, 'Required By Date is required'),
+  paymentTerm: z.string().min(1, 'Payment Term is required'),
+  statusId: z.number().int().positive('Status is required'),
 });
+
+interface PurchaseOrderEditProps {
+  params: {
+    slug: string;
+  };
+}
 
 const STATUS = {
   Draft: 1,
   Ordered: 2,
   Received: 3,
-} as const;
+};
 
-const PurchaseOrderRootPage = () => {
+const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
+  params: { slug },
+}) => {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
-
-  type PurchaseOrderItems = {
-    itemId: number;
-    description: string;
-    quantity: string;
-    unitPrice: number;
-  };
-
-  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<
-    PurchaseOrderItems[]
-  >([]);
-
-  // Initialize form with Zod resolver
-  const form = useForm<z.infer<typeof purchaseOrderSchema>>({
-    resolver: zodResolver(purchaseOrderSchema),
-    defaultValues: {
-      poNumber: '',
-      supplierId: 0,
-      orderDate: '',
-      requiredByDate: '',
-      paymentTerm: '',
-      statusId: 1,
-    },
+  // Fetch purchase order details
+  const {
+    data: purchaseOrderData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: [PURCHASEORDER_QUERY_KEY[0], slug],
+    queryFn: () => getPurchaseOrderById(Number(slug)),
+    enabled: !!slug,
   });
 
   // Query hooks
@@ -102,19 +105,57 @@ const PurchaseOrderRootPage = () => {
     queryFn: getAllInventoryItems,
   });
 
-  const queryClient = useQueryClient();
-  const router = useRouter();
+  // Update mutation
   const mutation = useMutation({
-    mutationFn: createPurchaseOrder,
+    mutationFn: updatePurchaseOrder,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SUPPLIER_QUERY_KEY });
-      toast.success('Purchase order created successfully');
+      queryClient.invalidateQueries({ queryKey: PURCHASEORDER_QUERY_KEY });
+      toast.success('Purchase Order updated successfully');
       router.push('/purchaseorder');
     },
     onError: (error: any) => {
-      toast.error(error.message);
+      toast.error(error.message || 'Error updating Purchase Order');
     },
   });
+
+  // Form setup
+  const form = useForm<z.infer<typeof purchaseOrderSchema>>({
+    resolver: zodResolver(purchaseOrderSchema),
+    defaultValues: {
+      poNumber: '',
+      supplierId: 0,
+      orderDate: '',
+      requiredByDate: '',
+      paymentTerm: '',
+      statusId: 1,
+    },
+  });
+
+  type PurchaseOrderItems = {
+    itemId: number;
+    description: string;
+    quantity: string;
+    unitPrice: number;
+  };
+
+  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<
+    PurchaseOrderItems[]
+  >([]);
+
+  // Prefill data when fetched
+  useEffect(() => {
+    if (purchaseOrderData) {
+      form.reset({
+        poNumber: purchaseOrderData.poNumber,
+        supplierId: purchaseOrderData.supplierId,
+        orderDate: purchaseOrderData.orderDate.split('T')[0],
+        requiredByDate: purchaseOrderData.requiredByDate.split('T')[0],
+        paymentTerm: purchaseOrderData.paymentTerm,
+        statusId: purchaseOrderData.statusId,
+      });
+      setPurchaseOrderItems(purchaseOrderData.purchaseOrderItems || []);
+    }
+  }, [purchaseOrderData, form]);
 
   const handleAddItem = (
     itemId: number,
@@ -144,27 +185,37 @@ const PurchaseOrderRootPage = () => {
     );
   };
 
+  // Submit form
   const onSubmit = async (values: z.infer<typeof purchaseOrderSchema>) => {
-    const validatedData = purchaseOrderSchema.parse(values);
-    const formattedPurchaseOrderItems = purchaseOrderItems.map((p) => ({
-      itemId: Number(p.itemId),
-      description: p.description,
-      quantity: Number(p.quantity),
-      unitPrice: Number(p.unitPrice),
-    }));
-
-    const data = {
-      ...validatedData,
-      purchaseOrderItems: formattedPurchaseOrderItems,
+    let currentSlug = Number(slug);
+    const updatedPurchaseOrder = {
+      ...values,
+      id: currentSlug,
+      purchaseOrderItems: purchaseOrderItems.map((item) => ({
+        id: Number(item.itemId),
+        itemId: Number(item.itemId),
+        purchaseOrderId: currentSlug,
+        description: item.description,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+      })),
     };
-
-    mutation.mutateAsync(data);
+    mutation.mutateAsync(updatedPurchaseOrder);
   };
+
+  if (isLoading)
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  if (isError) return <div>Error fetching Purchase Order data</div>;
+
   return (
-    <>
-      <h2 className="text-xl font-bold">Purchase Order Details</h2>
+    <div>
+      <h2 className="text-xl font-bold">Edit Purchase Order</h2>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             <FormField
               control={form.control}
@@ -174,8 +225,8 @@ const PurchaseOrderRootPage = () => {
                   <FormLabel>PO Number</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter PO number"
                       {...field}
+                      placeholder="Enter PO number"
                       className={
                         form.formState.errors.poNumber ? 'border-red-500' : ''
                       }
@@ -185,7 +236,6 @@ const PurchaseOrderRootPage = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="supplierId"
@@ -201,7 +251,7 @@ const PurchaseOrderRootPage = () => {
                       >
                         {field.value && supplierList
                           ? supplierList.find(
-                              (supplier) => supplier.id === field.value
+                              (supplier: any) => supplier.id === field.value
                             )?.fullName
                           : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -255,13 +305,12 @@ const PurchaseOrderRootPage = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="requiredByDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Required By</FormLabel>
+                  <FormLabel>Required By Date</FormLabel>
                   <FormControl>
                     <Input
                       type="date"
@@ -277,13 +326,12 @@ const PurchaseOrderRootPage = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="paymentTerm"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Payment Terms</FormLabel>
+                  <FormLabel>Payment Term</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Net 30"
@@ -299,7 +347,6 @@ const PurchaseOrderRootPage = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="statusId"
@@ -308,14 +355,16 @@ const PurchaseOrderRootPage = () => {
                   <FormLabel>Status</FormLabel>
                   <Select
                     onValueChange={(value) => field.onChange(Number(value))}
-                    value={field.value ? field.value.toString() : undefined}
+                    value={
+                      field.value ? Number(field.value).toString() : undefined
+                    }
                   >
                     <SelectTrigger
                       className={
                         form.formState.errors.statusId ? 'border-red-500' : ''
                       }
                     >
-                      <SelectValue placeholder="Select priority" />
+                      <SelectValue placeholder="Select Status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={STATUS.Draft.toString()}>
@@ -329,6 +378,7 @@ const PurchaseOrderRootPage = () => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+
                   <FormMessage />
                 </FormItem>
               )}
@@ -451,15 +501,15 @@ const PurchaseOrderRootPage = () => {
           </div>
           <Button
             type="submit"
-            className="w-full py-5 font-bold text-black"
             disabled={mutation.isPending}
+            className="w-full py-5 font-bold text-black"
           >
-            {mutation.isPending ? 'Submitting...' : 'Add Purchase Order'}
+            {mutation.isPending ? 'Updating...' : 'Update Purchase Order'}
           </Button>
         </form>
       </Form>
-    </>
+    </div>
   );
 };
 
-export default PurchaseOrderRootPage;
+export default PurchaseOrderEdit;
