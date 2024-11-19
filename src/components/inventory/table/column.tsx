@@ -34,11 +34,21 @@ export const columns: ColumnDef<InventoryItemsGetAllType>[] = [
           <ArrowUpDown />
         </Button>
       );
-  },
+    },
   },
   {
     accessorKey: 'stock',
-    header: 'Stock'
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Stock
+          <ArrowUpDown />
+        </Button>
+      );
+    },
   },
   {
     accessorKey: 'supplierName',
@@ -47,6 +57,24 @@ export const columns: ColumnDef<InventoryItemsGetAllType>[] = [
   {
     accessorKey: 'description',
     header: 'Description',
+  },
+  {
+    accessorKey: 'minStockQuantity',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Min Stock Quantity
+          <ArrowUpDown />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'reorderLevel',
+    header: 'Reorder Level',
   },
   {
     id: 'actions',

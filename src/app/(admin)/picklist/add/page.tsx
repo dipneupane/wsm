@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import { getAllCategories } from '@/services/categories';
 import { getAllCustomerInformation } from '@/services/customer';
 import { getAllInventoryItems } from '@/services/inventory-item';
@@ -75,7 +77,7 @@ const PickUpListRootPage = () => {
     defaultValues: {
       referenceNo: '',
       customerId: 0,
-      priorityId: 0,
+      priorityId: 2,
       requiredDate: '',
     },
   });
@@ -128,7 +130,11 @@ const PickUpListRootPage = () => {
     field: keyof Omit<pickListItems, 'categoryId' | 'itemId'>,
     value: string
   ) => {
-    setPickListItems((prevItems) => prevItems.map((item) => item.itemId === itemId ? { ...item, [field]: value } : item));
+    setPickListItems((prevItems) =>
+      prevItems.map((item) =>
+        item.itemId === itemId ? { ...item, [field]: value } : item
+      )
+    );
   };
 
   const onSubmit = async (values: z.infer<typeof pickListSchema>) => {
@@ -165,7 +171,11 @@ const PickUpListRootPage = () => {
                     <Input
                       placeholder="Enter reference number"
                       {...field}
-                      className={form.formState.errors.referenceNo ? 'border-red-500' : ''}
+                      className={
+                        form.formState.errors.referenceNo
+                          ? 'border-red-500'
+                          : ''
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -178,7 +188,7 @@ const PickUpListRootPage = () => {
               name="priorityId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Priority</FormLabel>
+                  <FormLabel>Status</FormLabel>
                   <Select
                     onValueChange={(value) => field.onChange(Number(value))}
                     value={field.value ? field.value.toString() : undefined}
@@ -188,7 +198,7 @@ const PickUpListRootPage = () => {
                         form.formState.errors.priorityId ? 'border-red-500' : ''
                       }
                     >
-                      <SelectValue placeholder="Select priority" />
+                      <SelectValue placeholder="Select Status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={PriorityLevel.Completed.toString()}>
@@ -222,8 +232,8 @@ const PickUpListRootPage = () => {
                       >
                         {field.value && customerList
                           ? customerList.find(
-                            (customer) => customer.id === field.value
-                          )?.fullName
+                              (customer) => customer.id === field.value
+                            )?.fullName
                           : 'Select Customer'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -279,7 +289,9 @@ const PickUpListRootPage = () => {
               )}
             />
           </div>
-          {isCategotyLoading && (<Loader2Icon className="animate-spin text-primary" />)}
+          {isCategotyLoading && (
+            <Loader2Icon className="animate-spin text-primary" />
+          )}
           {categoryData?.map((c, index) => (
             <div key={index} className="border-b">
               {/* top */}
@@ -310,14 +322,20 @@ const PickUpListRootPage = () => {
                                 <>
                                   {
                                     <CommandItem
-                                      disabled={pickListItems?.some((i) => i.itemId === item.id)}
+                                      disabled={pickListItems?.some(
+                                        (i) => i.itemId === item.id
+                                      )}
                                       onSelect={() =>
-                                        setPickListItems((prev) => [...prev,
-                                        {
-                                          itemId: item.id,
-                                          categoryId: c.key,
-                                          itemCode: item.code
-                                        },
+                                        setPickListItems((prev) => [
+                                          ...prev,
+                                          {
+                                            itemId: item.id,
+                                            categoryId: c.key,
+                                            itemCode:
+                                              item.description +
+                                              '-' +
+                                              item.code,
+                                          },
                                         ])
                                       }
                                       key={item.categoryId}
@@ -338,124 +356,125 @@ const PickUpListRootPage = () => {
 
               {/*  additional fields  */}
               <div className="">
-                {pickListItems?.map((item) =>
-                  item.categoryId === c.key && (
-                    <div
-                      key={item.itemId}
-                      className="flex items-center justify-center gap-x-2 py-2"
-                    >
-                      <Button
-                        className="translate-y-3"
-                        variant="destructive"
-                        onClick={() =>
-                          setPickListItems((prev) =>
-                            prev.filter((v) => v.itemId !== item.itemId)
-                          )
-                        }
+                {pickListItems?.map(
+                  (item) =>
+                    item.categoryId === c.key && (
+                      <div
+                        key={item.itemId}
+                        className="flex items-center justify-center gap-x-2 py-2"
                       >
-                        <Trash2Icon />
-                      </Button>
-                      <div className="hidden">
-                        <Label>Id</Label>
-                        <Input value={item.itemId} disabled type="text" />
-                      </div>
-
-                      <div>
-                        <Label>Item Code</Label>
-                        <Input value={item.itemCode} disabled type="text" />
-                      </div>
-
-                      <div className="">
-                        <Label>Fire Rating</Label>
-                        <Input
-                          type="text"
-                          value={item.fireRating || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'fireRating',
-                              e.target.value
+                        <Button
+                          className="translate-y-3"
+                          variant="destructive"
+                          onClick={() =>
+                            setPickListItems((prev) =>
+                              prev.filter((v) => v.itemId !== item.itemId)
                             )
                           }
-                        />
-                      </div>
+                        >
+                          <Trash2Icon />
+                        </Button>
+                        <div className="hidden">
+                          <Label>Id</Label>
+                          <Input value={item.itemId} disabled type="text" />
+                        </div>
 
-                      <div className="">
-                        <Label>Size</Label>
-                        <Input
-                          type="text"
-                          value={item.size || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'size',
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                        <div>
+                          <Label>Item Code</Label>
+                          <Input value={item.itemCode} disabled type="text" />
+                        </div>
 
-                      <div className="">
-                        <Label>Finish</Label>
-                        <Input
-                          type="text"
-                          value={item.finish || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'finish',
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                        <div className="">
+                          <Label>Fire Rating</Label>
+                          <Input
+                            type="text"
+                            value={item.fireRating || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'fireRating',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                      <div className="">
-                        <Label>Order</Label>
-                        <Input
-                          type="number"
-                          value={item.order || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'order',
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                        <div className="">
+                          <Label>Size</Label>
+                          <Input
+                            type="text"
+                            value={item.size || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'size',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                      <div className="">
-                        <Label>Date</Label>
-                        <Input
-                          type="date"
-                          value={item.date || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'date',
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                        <div className="">
+                          <Label>Finish</Label>
+                          <Input
+                            type="text"
+                            value={item.finish || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'finish',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                      <div className="">
-                        <Label>Notes</Label>
-                        <Input
-                          type="text"
-                          value={item.notes || ''}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.itemId,
-                              'notes',
-                              e.target.value
-                            )
-                          }
-                        />
+                        <div className="">
+                          <Label>Order</Label>
+                          <Input
+                            type="number"
+                            value={item.order || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'order',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="">
+                          <Label>Date</Label>
+                          <Input
+                            type="date"
+                            value={item.date || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'date',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="">
+                          <Label>Notes</Label>
+                          <Input
+                            type="text"
+                            value={item.notes || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'notes',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )
+                    )
                 )}
               </div>
             </div>

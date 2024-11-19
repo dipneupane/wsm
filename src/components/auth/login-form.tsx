@@ -50,7 +50,6 @@ const LoginForm = () => {
         password: data.password,
       });
       if (res?.status === 200 && !res?.error) {
-        const session: any = await getSession();
         toast.success('Login successfull');
         router.push('/inventory');
       } else toast.error('Invalid credentials');

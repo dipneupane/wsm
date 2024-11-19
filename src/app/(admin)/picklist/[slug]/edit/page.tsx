@@ -92,7 +92,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
     defaultValues: {
       referenceNo: pickListDataById?.referenceNo,
       customerId: pickListDataById?.customerId,
-      priorityId: pickListDataById?.priorityId,
+      priorityId: pickListDataById?.priorityId ?? 2,
       requiredDate: pickListDataById?.requiredDate,
     },
   });
@@ -222,7 +222,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
               name="priorityId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Priority</FormLabel>
+                  <FormLabel>Status</FormLabel>
                   <Select
                     onValueChange={(value) => field.onChange(Number(value))}
                     value={field.value ? field.value.toString() : undefined}
@@ -232,7 +232,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                         form.formState.errors.priorityId ? 'border-red-500' : ''
                       }
                     >
-                      <SelectValue placeholder="Select priority" />
+                      <SelectValue placeholder="Select Status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={PriorityLevel.Completed.toString()}>

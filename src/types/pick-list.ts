@@ -17,7 +17,7 @@ interface IPickListItems {
   categoryId?: number;
 }
 
-interface ICreatePickListItem extends IPickListBase, IPickListItems { }
+interface ICreatePickListItem extends IPickListBase, IPickListItems {}
 
 export type PickListCreateType = ICreatePickListItem;
 
@@ -44,6 +44,7 @@ export type PickListGetByIdType = {
     itemId: number;
     itemCode: string;
     fireRating?: string;
+    categoryName?: string;
     size?: string;
     finish?: string;
     order?: string;

@@ -5,8 +5,8 @@ interface BaseInventoryItem {
   supplierId: number;
   cost: number;
   stock: number;
-  categoryName: string;
-  supplierName: string;
+  minStockQuantity: number;
+  reorderLevel: number;
 }
 
 // Interface for the 'get by ID' operation, which includes additional fields

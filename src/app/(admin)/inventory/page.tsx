@@ -48,7 +48,7 @@ const InventoryRootPage = () => {
           ) : (
             <ArrowDownIcon />
           )}
-          Export
+          Export All Inventory Items
         </Button>
         <Link href="/inventory/add">
           <Button>

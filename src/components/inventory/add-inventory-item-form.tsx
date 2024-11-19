@@ -52,6 +52,11 @@ const formSchema = z.object({
   categoryId: z.number(),
   supplierId: z.number(),
   stock: z.string().transform((v) => Number(v)),
+  minStockQuantity: z.string().transform((v) => Number(v)),
+  reorderLevel: z
+    .string()
+    .transform((v) => Number(v))
+    .optional(),
 });
 
 export default function AddInventoryItemForm({}: {}) {
@@ -84,6 +89,7 @@ export default function AddInventoryItemForm({}: {}) {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
+      console.log('Form values', values);
       //@ts-ignore
       mutation.mutate(values);
     } catch (error) {
@@ -291,6 +297,33 @@ export default function AddInventoryItemForm({}: {}) {
                   className="resize-none"
                   {...field}
                 />
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="minStockQuantity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel> Min Stock Qunatity</FormLabel>
+              <FormControl>
+                <Input placeholder="eg:2000" type="number" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="reorderLevel"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel> Reorder Level</FormLabel>
+              <FormControl>
+                <Input placeholder="eg:10" type="number" {...field} />
               </FormControl>
 
               <FormMessage />

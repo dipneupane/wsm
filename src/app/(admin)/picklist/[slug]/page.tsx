@@ -162,7 +162,7 @@ export default function ViewPickupListItems({
               {pickListData.pickListItems.map((item, index) => (
                 <TableRow key={index}>
                   <TableCell>{item.itemId}</TableCell>
-                  <TableCell>{item.categoryId || 'N/A'}</TableCell>
+                  <TableCell>{item.categoryName || 'N/A'}</TableCell>
                   <TableCell>{item.fireRating || 'N/A'}</TableCell>
                   <TableCell>{item.size || 'N/A'}</TableCell>
                   <TableCell>{item.finish || 'N/A'}</TableCell>

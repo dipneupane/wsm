@@ -58,6 +58,11 @@ const formSchema = z.object({
   categoryId: z.number(),
   supplierId: z.number(),
   stock: z.any(),
+  minStockQuantity: z.string().transform((v) => Number(v)),
+  reorderLevel: z
+    .string()
+    .transform((v) => Number(v))
+    .optional(),
 });
 
 export default function EditInventoryItemForm({
@@ -98,6 +103,8 @@ export default function EditInventoryItemForm({
       categoryId: data.categoryId,
       supplierId: data.supplierId,
       stock: data.stock,
+      minStockQuantity: data.minStockQuantity,
+      reorderLevel: data.reorderLevel,
     },
   });
 
@@ -203,8 +210,8 @@ export default function EditInventoryItemForm({
                         >
                           {field.value && categoryData?.data
                             ? categoryData?.data.find(
-                              (d) => d.key === field.value
-                            )?.value
+                                (d) => d.key === field.value
+                              )?.value
                             : 'Select Category'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -267,8 +274,8 @@ export default function EditInventoryItemForm({
                         >
                           {field.value && supplierData?.data
                             ? supplierData?.data.find(
-                              (s) => s.id === field.value
-                            )?.fullName
+                                (s) => s.id === field.value
+                              )?.fullName
                             : 'Select Supplier'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -324,6 +331,33 @@ export default function EditInventoryItemForm({
                   className="resize-none"
                   {...field}
                 />
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="minStockQuantity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel> Min Stock Qunatity</FormLabel>
+              <FormControl>
+                <Input placeholder="eg:2000" type="number" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="reorderLevel"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel> Reorder Level</FormLabel>
+              <FormControl>
+                <Input placeholder="eg:10" type="number" {...field} />
               </FormControl>
 
               <FormMessage />

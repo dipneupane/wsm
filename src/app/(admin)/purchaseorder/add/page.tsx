@@ -69,6 +69,7 @@ const PurchaseOrderRootPage = () => {
 
   type PurchaseOrderItems = {
     itemId: number;
+    itemCode: string;
     description: string;
     quantity: string;
     unitPrice: number;
@@ -116,17 +117,14 @@ const PurchaseOrderRootPage = () => {
     },
   });
 
-  const handleAddItem = (
-    itemId: number,
-    description: string,
-    unitPrice: number
-  ) => {
+  const handleAddItem = (itemId: number, itemCode: string) => {
     setPurchaseOrderItems((prev: any) => [
       ...prev,
       {
         itemId,
-        description,
-        unitPrice,
+        itemCode,
+        description: '',
+        unitPrice: '',
         quantity: '',
       },
     ]);
@@ -157,7 +155,6 @@ const PurchaseOrderRootPage = () => {
       ...validatedData,
       purchaseOrderItems: formattedPurchaseOrderItems,
     };
-
     mutation.mutateAsync(data);
   };
   return (
@@ -362,13 +359,7 @@ const PurchaseOrderRootPage = () => {
                               disabled={purchaseOrderItems?.some(
                                 (i) => i.itemId === item.id
                               )}
-                              onSelect={() =>
-                                handleAddItem(
-                                  item.id,
-                                  item.description,
-                                  item.cost
-                                )
-                              }
+                              onSelect={() => handleAddItem(item.id, item.code)}
                             >
                               {item.id} - {item.code} - {item.description}
                             </CommandItem>
@@ -389,6 +380,7 @@ const PurchaseOrderRootPage = () => {
                   className="flex items-center justify-center gap-x-2 py-2"
                 >
                   <Button
+                    type="button"
                     className="translate-y-3"
                     variant="destructive"
                     onClick={() =>
@@ -401,8 +393,8 @@ const PurchaseOrderRootPage = () => {
                   </Button>
 
                   <div>
-                    <Label>Item Id</Label>
-                    <Input value={item.itemId} disabled type="text" />
+                    <Label>Item Code</Label>
+                    <Input value={item.itemCode} disabled type="text" />
                   </div>
 
                   <div>
@@ -412,8 +404,14 @@ const PurchaseOrderRootPage = () => {
                     <Input
                       type="text"
                       id={`description-${item.itemId}`}
-                      disabled
                       value={item.description}
+                      onChange={(e) =>
+                        handleItemFieldChange(
+                          item.itemId,
+                          'description',
+                          e.target.value
+                        )
+                      }
                     />
                   </div>
 
@@ -422,7 +420,6 @@ const PurchaseOrderRootPage = () => {
                     <Input
                       id={`quantity-${item.id}`}
                       type="text"
-                      placeholder="Enter stock quantity"
                       required
                       step="1"
                       pattern="\d+"
@@ -440,9 +437,16 @@ const PurchaseOrderRootPage = () => {
                     <Label htmlFor={`unitPrice-${item.id}`}>Unit Price</Label>
                     <Input
                       id={`unitPrice-${item.id}`}
-                      type="number"
-                      disabled
+                      type="text"
                       value={item.unitPrice}
+                      required
+                      onChange={(e) =>
+                        handleItemFieldChange(
+                          item.itemId,
+                          'unitPrice',
+                          e.target.value
+                        )
+                      }
                     />
                   </div>
                 </div>
