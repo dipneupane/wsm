@@ -8,13 +8,22 @@ import {
 
 import { apiClientWithClientHeader } from '@/lib/axios-config';
 
-export const getAllPickListInformation = async (): Promise<
+interface filterProps
+  {
+    "filterText": string,
+    "filterParams": any[]
+  }
+
+export const getAllPickListInformation = async (filter:filterProps = {
+  "filterText": "",
+  "filterParams": []
+}): Promise<
   PickListGetAllType[]
 > => {
   try {
     const { data } =
-      await apiClientWithClientHeader.get<ApiResponse<PickListGetAllType[]>>(
-        '/PickList/GetAll'
+      await apiClientWithClientHeader.post<ApiResponse<PickListGetAllType[]>>(
+        '/PickList/GetAll', filter
       );
 
     if (!data.succeeded) {
@@ -59,9 +68,13 @@ export const downloadPickListProductionSheet = async (id: number) => {
   }
 };
 
-export const getPickListById = async (id: number): Promise<PickListGetByIdType> => {
+export const getPickListById = async (
+  id: number
+): Promise<PickListGetByIdType> => {
   try {
-    const { data } = await apiClientWithClientHeader.get<ApiResponse<any>>(`/PickList/GetById?id=${id}`);
+    const { data } = await apiClientWithClientHeader.get<ApiResponse<any>>(
+      `/PickList/GetById?id=${id}`
+    );
 
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');

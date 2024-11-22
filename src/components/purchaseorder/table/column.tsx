@@ -13,10 +13,6 @@ import ActionCellComponent from './action';
 
 export const columns: ColumnDef<PurchaseOrderGetAllType>[] = [
   {
-    accessorKey: 'id',
-    header: 'Id',
-  },
-  {
     accessorKey: 'poNumber',
     header: 'PO Number',
   },

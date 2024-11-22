@@ -2,8 +2,6 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDownIcon } from 'lucide-react';
-
-import { InventoryItemsGetAllType } from '@/types/inventory-items';
 import { PickListGetAllType } from '@/types/pick-list';
 
 import { Badge } from '@/components/ui/badge';
@@ -11,13 +9,7 @@ import { Button } from '@/components/ui/button';
 
 import ActionCellComponent from './action';
 
-// import ActionCellComponent from './action';
-
 export const columns: ColumnDef<PickListGetAllType>[] = [
-  {
-    accessorKey: 'id',
-    header: 'Id',
-  },
   {
     accessorKey: 'referenceNo',
     header: 'Reference No',

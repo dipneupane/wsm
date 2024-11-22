@@ -93,11 +93,10 @@ const ItemSelector = ({ items, selectedIds, onSelect }: ItemSelectorProps) => {
                     onSelect={() => handleSelect(item.id)}
                   >
                     <Check
-                      className={`mr-2 h-4 w-4 ${
-                        selectedIds.includes(item.id)
+                      className={`mr-2 h-4 w-4 ${selectedIds.includes(item.id)
                           ? 'opacity-100'
                           : 'opacity-0'
-                      }`}
+                        }`}
                     />
                     {item.code} - {item.description}
                   </CommandItem>
@@ -133,8 +132,8 @@ const ItemSelector = ({ items, selectedIds, onSelect }: ItemSelectorProps) => {
 
 export default function AddAssemblyForm() {
   const { data: inventoryItems = [] } = useQuery({
-    queryKey: INVENTORY_QUERY_KEY,
-    queryFn: getAllInventoryItems,
+    queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
+    queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
   });
 
   const router = useRouter();

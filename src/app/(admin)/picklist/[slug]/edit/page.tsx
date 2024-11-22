@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -25,6 +25,8 @@ import {
   INVENTORY_QUERY_KEY,
   PICKLIST_QUERY_KEY,
 } from '@/config/query-keys';
+
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -58,6 +60,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import { AdditionalInformations } from '../../add/page';
+import { PurchaseDialog } from '../../add/purchaseDialog';
+
 const PriorityLevel = {
   Pending: 1,
   InProgress: 2,
@@ -70,6 +75,11 @@ const pickListSchema = z.object({
   customerId: z.number().int().positive('Please select a customer'),
   priorityId: z.number().int(),
   requiredDate: z.string(),
+  project: z.string().optional(),
+  aptHouseNumber: z.string().optional(),
+  doorType: z.string().optional(),
+  ironMongeryFinish: z.string().optional(),
+  frameFinish: z.string().optional(),
 });
 
 interface PickListProps {
@@ -94,6 +104,11 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
       customerId: pickListDataById?.customerId,
       priorityId: pickListDataById?.priorityId ?? 2,
       requiredDate: pickListDataById?.requiredDate,
+      project: pickListDataById?.project,
+      aptHouseNumber: pickListDataById?.aptHouseNumber,
+      doorType: pickListDataById?.doorType,
+      ironMongeryFinish: pickListDataById?.ironMongeryFinish,
+      frameFinish: pickListDataById?.frameFinish,
     },
   });
 
@@ -104,9 +119,9 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   });
 
   const { data: inventoryItemsList } = useQuery({
-    queryKey: INVENTORY_QUERY_KEY,
-    queryFn: getAllInventoryItems,
-  });
+    queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
+    queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
+  });  
 
   const { data: customerList } = useQuery({
     queryKey: CUSTOMER_QUERY_KEY,
@@ -122,10 +137,13 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
     order?: string;
     date?: string;
     notes?: string;
+    madeOrderOfTheItems?: boolean;
   };
 
   const [pickListItems, setPickListItems] = React.useState<pickListItems[]>([]);
-
+  const [additionalInformation, setAdditionalInformation] = useState<
+    AdditionalInformations[]
+  >([]);
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -138,8 +156,13 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
         requiredDate: new Date(pickListDataById.requiredDate)
           .toISOString()
           .split('T')[0],
+        project: pickListDataById.project,
+        aptHouseNumber: pickListDataById.aptHouseNumber,
+        doorType: pickListDataById.doorType,
+        ironMongeryFinish: pickListDataById.ironMongeryFinish,
+        frameFinish: pickListDataById.frameFinish,
       });
-
+      setAdditionalInformation(pickListDataById.additionalInformations ?? []);
       setPickListItems(
         pickListDataById.pickListItems.map((item) => ({
           ...item,
@@ -186,6 +209,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
     const data = {
       ...validatedData,
       pickListItems: pickListItemsWithoutCategory,
+      additionalInformations: additionalInformation,
     };
     mutation.mutateAsync(data);
   };
@@ -194,7 +218,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <FormField
               control={form.control}
               name="referenceNo"
@@ -322,6 +346,71 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="aptHouseNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>AptHouseNumber </FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="doorType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel> Door Type</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ironMongeryFinish"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Iron Mogery Finish</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="frameFinish"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel> Frame Finish</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="project"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel> Project</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
           {isCategotyLoading && (
             <Loader2Icon className="animate-spin text-primary" />
@@ -390,8 +479,25 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                   (item) =>
                     item.categoryId === c.key && (
                       <div
-                        key={item.itemId}
-                        className="flex items-center justify-center gap-x-2 py-2"
+                        className={cn({
+                          'text-primary':
+                            Number(item.order) <=
+                            (inventoryItemsList?.find(
+                              (i) => i.id === item.itemId
+                            )?.stock ?? 0),
+                          'text-orange-200': pickListItems?.find(
+                            (i) => i.itemId === item.itemId
+                          )?.madeOrderOfTheItems,
+                          'text-red-500':
+                            Number(item.order) >
+                              (inventoryItemsList?.find(
+                                (i) => i.id === item.itemId
+                              )?.stock ?? 0) &&
+                            !pickListItems?.find(
+                              (i) => i.itemId === item.itemId
+                            )?.madeOrderOfTheItems,
+                          'flex items-center justify-center gap-x-2 py-2': true,
+                        })}
                       >
                         <Button
                           className="translate-y-3"
@@ -456,12 +562,38 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                             }
                           />
                         </div>
-
-                        <div className="">
-                          <Label>Order</Label>
+                        <div
+                          className={cn({
+                            'text-primary':
+                              Number(item.order) <=
+                              (inventoryItemsList?.find(
+                                (i) => i.id === item.itemId
+                              )?.stock ?? 0),
+                            'text-orange-200': pickListItems?.find(
+                              (i) => i.itemId === item.itemId
+                            )?.madeOrderOfTheItems,
+                            'text-red-500':
+                              Number(item.order) >
+                                (inventoryItemsList?.find(
+                                  (i) => i.id === item.itemId
+                                )?.stock ?? 0) &&
+                              !pickListItems?.find(
+                                (i) => i.itemId === item.itemId
+                              )?.madeOrderOfTheItems,
+                            'flex flex-col items-center': true,
+                          })}
+                        >
+                          <Label className="">Order</Label>
+                          <span className="text-xs text-red-500">
+                            Stock:
+                            {
+                              inventoryItemsList?.find(
+                                (i) => i.id === item.itemId
+                              )?.stock
+                            }
+                          </span>
                           <Input
-                            type="text"
-                            placeholder="order"
+                            type="number"
                             value={item.order || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -471,6 +603,30 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                               )
                             }
                           />
+                          {pickListItems?.find((i) => i.itemId === item.itemId)
+                            ?.madeOrderOfTheItems ? (
+                            <span className="text-xs">PickListAdded</span>
+                          ) : (
+                            'no'
+                          )}
+                          {Number(item.order) >
+                          (inventoryItemsList?.find((i) => i.id === item.itemId)
+                            ?.stock ?? 0) ? (
+                            <span>
+                              <PurchaseDialog
+                                //@ts-ignore
+                                pickList={pickListItems}
+                                //@ts-ignore
+                                onPickListItems={setPickListItems}
+                                //@ts-ignore
+                                value={pickListItems.find(
+                                  (i) => i.itemId === item.itemId
+                                )}
+                              />
+                            </span>
+                          ) : (
+                            ''
+                          )}
                         </div>
 
                         <div className="">
@@ -510,6 +666,119 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
               </div>
             </div>
           ))}
+          <div className="">
+            <h2>Additinonal Information</h2>
+            <div
+              className="w-fit cursor-pointer rounded-xl bg-primary p-2 text-black"
+              onClick={(e) => {
+                setAdditionalInformation((prev) => [
+                  ...prev,
+                  {
+                    fireRating: '',
+                    handling: '',
+                    lockType: '',
+                    note: '',
+                    underCut: '',
+                    wallThickNess: '',
+                  },
+                ]);
+              }}
+            >
+              Add
+            </div>
+          </div>
+          <div className="flex flex-col">
+            {additionalInformation.map((info, index) => (
+              <div className="flex items-center">
+                <h3>{index + 1}</h3>
+                <div className="">
+                  <span
+                    onClick={() =>
+                      setAdditionalInformation((prev) =>
+                        prev.filter((_, idx) => idx !== index)
+                      )
+                    }
+                  >
+                    <Trash2Icon />
+                  </span>
+                </div>
+                <div className="">
+                  <Label>Fire Rating</Label>
+                  <Input
+                    key={index}
+                    value={info.fireRating}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index
+                            ? { ...i, fireRating: e.target.value }
+                            : i
+                        )
+                      );
+                    }}
+                  />
+                </div>
+                <div className="">
+                  <Label>Handling</Label>
+                  <Input
+                    key={index}
+                    value={info.handling}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index ? { ...i, handling: e.target.value } : i
+                        )
+                      );
+                    }}
+                  />
+                </div>
+                <div className="">
+                  <Label>LockType</Label>
+                  <Input
+                    key={index}
+                    value={info.lockType}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index ? { ...i, lockType: e.target.value } : i
+                        )
+                      );
+                    }}
+                  />
+                </div>
+                <div className="">
+                  <Label>UnderCut</Label>
+                  <Input
+                    key={index}
+                    value={info.underCut}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index ? { ...i, underCut: e.target.value } : i
+                        )
+                      );
+                    }}
+                  />
+                </div>
+                <div className="">
+                  <Label> Wall ThickNess</Label>
+                  <Input
+                    key={index}
+                    value={info.wallThickNess}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index
+                            ? { ...i, wallThickNess: e.target.value }
+                            : i
+                        )
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
           <Button
             type="submit"
             className="w-full"

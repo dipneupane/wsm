@@ -3,7 +3,22 @@ interface IPickListBase {
   customerId: number;
   priorityId: number;
   requiredDate: string;
+  project?: string;
+  aptHouseNumber?: string;
+  doorType?: string;
+  ironMongeryFinish?: string;
+  frameFinish?: string;
   pickListItems?: IPickListItems[];
+  additionalInformations?: IAdditionalInformations[];
+}
+
+interface IAdditionalInformations {
+  wallThickNess?: string;
+  handling?: string;
+  underCut?: string;
+  lockType?: string;
+  fireRating?: string;
+  note?: string;
 }
 
 interface IPickListItems {
@@ -17,7 +32,7 @@ interface IPickListItems {
   categoryId?: number;
 }
 
-interface ICreatePickListItem extends IPickListBase, IPickListItems {}
+interface ICreatePickListItem extends IPickListBase {}
 
 export type PickListCreateType = ICreatePickListItem;
 
@@ -39,6 +54,11 @@ export type PickListGetByIdType = {
   priorityId: number;
   createdDate: string;
   requiredDate: string;
+  project?: string;
+  aptHouseNumber?: string;
+  doorType?: string;
+  ironMongeryFinish?: string;
+  frameFinish?: string;
   pickListItems: {
     categoryId?: number;
     itemId: number;
@@ -51,4 +71,17 @@ export type PickListGetByIdType = {
     date?: string;
     notes?: string;
   }[];
+  additionalInformations: {
+    wallThickNess?: string;
+    handling?: string;
+    underCut?: string;
+    lockType?: string;
+    fireRating?: string;
+    note?: string;
+  }[];
+};
+
+export type PurchaseOrderGetBySupplierIDType = {
+  id: number;
+  poNumber: string;
 };

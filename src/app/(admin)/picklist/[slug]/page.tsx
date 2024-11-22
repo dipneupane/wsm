@@ -93,24 +93,37 @@ export default function ViewPickupListItems({
         <CardContent>
           <div className="mb-6 grid grid-cols-2 gap-4">
             <div>
-              <p className="font-semibold">Reference No:</p>
+              <p className="font-semibold">Reference No :</p>
               <p>{pickListData.referenceNo}</p>
             </div>
             <div>
-              <p className="font-semibold">Customer ID:</p>
+              <p className="font-semibold">Customer ID :</p>
               <p>{pickListData.customerId}</p>
             </div>
             <div>
+              <p className="font-semibold"> Iron Mongery Finish : </p>
+              <p>{pickListData.ironMongeryFinish}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Project :</p>
+              <p>{pickListData.project}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Frame Finish : </p>
+              <p>{pickListData.frameFinish}</p>
+            </div>
+            <div>
+              <p className="font-semibold"> APT House Number : </p>
+              <p>{pickListData.aptHouseNumber}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Door Type : </p>
+              <p>{pickListData.doorType}</p>
+            </div>
+
+            <div>
               <p className="font-semibold">Priority:</p>
-              <Badge
-                variant={
-                  pickListData.priorityId === 1
-                    ? 'default'
-                    : pickListData.priorityId === 2
-                      ? 'secondary'
-                      : 'outline'
-                }
-              >
+              <Badge>
                 {
                   priorityMap[
                     pickListData.priorityId as keyof typeof priorityMap
@@ -143,7 +156,33 @@ export default function ViewPickupListItems({
               </Link>
             </div>
           </div>
-
+          <h3>Additonal Information</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Wall Thickness</TableHead>
+                <TableHead>Handling</TableHead>
+                <TableHead>Under Cut</TableHead>
+                <TableHead>Lock Type</TableHead>
+                <TableHead>Fire Rating</TableHead>
+                <TableHead>Note</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pickListData.additionalInformations.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell key={index}>
+                    {item.wallThickNess || 'N/A'}
+                  </TableCell>
+                  <TableCell key={index}>{item.handling || 'N/A'}</TableCell>
+                  <TableCell key={index}>{item.underCut || 'N/A'}</TableCell>
+                  <TableCell key={index}>{item.lockType || 'N/A'}</TableCell>
+                  <TableCell key={index}>{item.fireRating || 'N/A'}</TableCell>
+                  <TableCell key={index}>{item.note || 'N/A'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
           <h3 className="mb-2 text-lg font-semibold">Pick List Items</h3>
           <Table>
             <TableHeader>

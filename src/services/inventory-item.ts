@@ -1,20 +1,31 @@
 import { ApiResponse } from '@/types';
+
 import {
   InventoryItemCreateType,
   InventoryItemGetByIdType,
   InventoryItemsGetAllType,
   InventoryItemUpdateType,
 } from '@/types/inventory-items';
+
 import { apiClientWithClientHeader } from '@/lib/axios-config';
 
-export const getAllInventoryItems = async (): Promise<
+interface filterProps
+  {
+    "filterText": string,
+    "filterParams": any[]
+  }
+
+export const getAllInventoryItems = async (filter:filterProps = {
+  "filterText": "",
+  "filterParams": []
+}): Promise<
   InventoryItemsGetAllType[] | undefined
 > => {
   try {
     const { data } =
-      await apiClientWithClientHeader.get<
+      await apiClientWithClientHeader.post<
         ApiResponse<InventoryItemsGetAllType[]>
-      >('/Item/GetAll');
+      >('/Item/GetAll', filter);
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');
     }

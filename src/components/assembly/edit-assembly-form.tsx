@@ -59,14 +59,11 @@ type InventoryItem = {
   stock: number;
 };
 
-export default function EditAssemblyForm({
-  data,
-}: {
-  data: AssemblyGetByIDType;
-}) {
+export default function EditAssemblyForm({ data }: { data: AssemblyGetByIDType; }) {
+
   const { data: inventoryItemsList } = useQuery({
-    queryKey: INVENTORY_QUERY_KEY,
-    queryFn: getAllInventoryItems,
+    queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
+    queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
   });
 
   const router = useRouter();
@@ -188,11 +185,10 @@ export default function EditAssemblyForm({
                               }}
                             >
                               <Check
-                                className={`mr-2 h-4 w-4 ${
-                                  field.value?.includes(item.id)
-                                    ? 'opacity-100'
-                                    : 'opacity-0'
-                                }`}
+                                className={`mr-2 h-4 w-4 ${field.value?.includes(item.id)
+                                  ? 'opacity-100'
+                                  : 'opacity-0'
+                                  }`}
                               />
                               {item.code}
                             </CommandItem>

@@ -99,10 +99,10 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     queryKey: SUPPLIER_QUERY_KEY,
     queryFn: getAllSupplierInformation,
   });
-
+  
   const { data: inventoryItemsList } = useQuery({
-    queryKey: INVENTORY_QUERY_KEY,
-    queryFn: getAllInventoryItems,
+    queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
+    queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
   });
 
   // Update mutation

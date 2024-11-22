@@ -6,11 +6,16 @@ import { columns } from './column';
 
 interface IUsersTableProps {
   data: PickListGetAllType[] | any;
+  filterUI?: any;
 }
 
-export default function PickListItemsTable({ data }: IUsersTableProps) {
+export default function PickListItemsTable({
+  data,
+  filterUI,
+}: IUsersTableProps) {
   return (
     <DataTable<PickListGetAllType>
+      filterUI={filterUI}
       data={data}
       columns={columns}
       searchFields={[

@@ -1,16 +1,25 @@
 import { ApiResponse } from '@/types';
 
-import { PurchaseOrderGetAllType,PurchaseOrderCreateType, PurchaseOrderGetByIdType, PurchaseOrderUpdateType } from '@/types/purchase-order';
+import { PurchaseOrderGetBySupplierIDType } from '@/types/pick-list';
+import {
+  PurchaseOrderCreateType,
+  PurchaseOrderGetAllType,
+  PurchaseOrderGetByIdType,
+  PurchaseOrderUpdateType,
+} from '@/types/purchase-order';
 
 import { apiClientWithClientHeader } from '@/lib/axios-config';
 
-export const getAllPurchaseOrderInformation = async (): Promise<
-  PurchaseOrderGetAllType[]
-> => {
+interface filterProps {
+  "filterText": string,
+  "filterParams": any[]
+}
+
+export const getAllPurchaseOrderInformation = async (filter: filterProps = { "filterText": "", "filterParams": [] }): Promise<PurchaseOrderGetAllType[]> => {
   try {
     const { data } =
-      await apiClientWithClientHeader.get<ApiResponse<PurchaseOrderGetAllType[]>>(
-        '/PurchaseOrder/GetAll'
+      await apiClientWithClientHeader.post<ApiResponse<PurchaseOrderGetAllType[]>>(
+        '/PurchaseOrder/GetAll', filter
       );
 
     if (!data.succeeded) {
@@ -38,13 +47,11 @@ export const createPurchaseOrder = async (data: PurchaseOrderCreateType) => {
   }
 };
 
-export const getPurchaseOrderById = async (
-  id: number
-): Promise<any> => {
+export const getPurchaseOrderById = async (id: number): Promise<any> => {
   try {
-    const { data } = await apiClientWithClientHeader.get<ApiResponse<PurchaseOrderGetByIdType>>(
-      `/PurchaseOrder/GetById?Id=${id}`
-    );
+    const { data } = await apiClientWithClientHeader.get<
+      ApiResponse<PurchaseOrderGetByIdType>
+    >(`/PurchaseOrder/GetById?Id=${id}`);
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');
     }
@@ -54,18 +61,34 @@ export const getPurchaseOrderById = async (
   }
 };
 
-
 export const updatePurchaseOrder = async (data: PurchaseOrderUpdateType) => {
   try {
-    const { data: res } = await apiClientWithClientHeader.put<
-      ApiResponse<any>
-    >('/PurchaseOrder/Update', data);
+    const { data: res } = await apiClientWithClientHeader.put<ApiResponse<any>>(
+      '/PurchaseOrder/Update',
+      data
+    );
     const errorMessage = res.messages?.[0] || res.Messages?.[0];
 
     if (res.Succeeded === false || res.succeeded === false) {
       throw new Error(errorMessage || 'Unknown error from the server');
     }
     return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getPurchaseOrderBySupplierID = async (
+  id: number
+): Promise<PurchaseOrderGetBySupplierIDType[]> => {
+  try {
+    const { data } = await apiClientWithClientHeader.get<
+      ApiResponse<PurchaseOrderGetBySupplierIDType[]>
+    >(`/PurchaseOrder/GetBySupplierId?SupplierId=${id}`);
+    if (!data.succeeded) {
+      throw new Error(data.messages[0] || 'Unknown error from the server');
+    }
+    return data.data;
   } catch (error) {
     throw error;
   }

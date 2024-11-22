@@ -14,7 +14,11 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { INVENTORY_QUERY_KEY, SUPPLIER_QUERY_KEY } from '@/config/query-keys';
+import {
+  INVENTORY_QUERY_KEY,
+  PURCHASEORDER_QUERY_KEY,
+  SUPPLIER_QUERY_KEY,
+} from '@/config/query-keys';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -64,7 +68,7 @@ const STATUS = {
   Received: 3,
 } as const;
 
-const PurchaseOrderRootPage = () => {
+const PurchaseOrderAddPage = () => {
   const [open, setOpen] = React.useState(false);
 
   type PurchaseOrderItems = {
@@ -99,8 +103,8 @@ const PurchaseOrderRootPage = () => {
   });
 
   const { data: inventoryItemsList } = useQuery({
-    queryKey: INVENTORY_QUERY_KEY,
-    queryFn: getAllInventoryItems,
+    queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
+    queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
   });
 
   const queryClient = useQueryClient();
@@ -108,7 +112,7 @@ const PurchaseOrderRootPage = () => {
   const mutation = useMutation({
     mutationFn: createPurchaseOrder,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SUPPLIER_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PURCHASEORDER_QUERY_KEY });
       toast.success('Purchase order created successfully');
       router.push('/purchaseorder');
     },
@@ -487,4 +491,4 @@ const PurchaseOrderRootPage = () => {
   );
 };
 
-export default PurchaseOrderRootPage;
+export default PurchaseOrderAddPage;
