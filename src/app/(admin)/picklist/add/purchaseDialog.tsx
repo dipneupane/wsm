@@ -2,31 +2,17 @@
 
 import { useState } from 'react';
 
-import {
-  createPurchaseOrder,
-  getPurchaseOrderBySupplierID,
-} from '@/services/purchase-order';
+import { createPurchaseOrder, getPurchaseOrderBySupplierID } from '@/services/purchase-order';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { set } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import {
-  PURCHASEORDER_QUERY_KEY,
-  SUPPLIER_QUERY_KEY,
-} from '@/config/query-keys';
+import { PURCHASEORDER_QUERY_KEY } from '@/config/query-keys';
 
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -44,55 +30,71 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import PurchaseOrderAddPage from '../../purchaseorder/add/page';
 import { pickListItems } from './page';
+import { PurchaseOrderGetBySupplierIDType } from '@/types/pick-list';
 
 interface PurchaseDialogProps {
-  pickList?: pickListItems[] | undefined;
-  value?: pickListItems;
-  onPickListItems: React.Dispatch<React.SetStateAction<pickListItems[]>>;
+  pickList?: pickListItems[];
+  value: pickListItems;
+  onPurchaseOrderConfirmationCallback: React.Dispatch<React.SetStateAction<pickListItems[]>>;
 }
 
-export function PurchaseDialog({
-  pickList,
-  value,
-  onPickListItems,
-}: PurchaseDialogProps) {
+export function PurchaseDialog({ pickList, value, onPurchaseOrderConfirmationCallback }: PurchaseDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { data } = useQuery({
-    queryKey: ['PickListSupplierGetByID', value?.supplierID],
-    queryFn: () => getPurchaseOrderBySupplierID(value?.supplierID!),
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState<PurchaseOrderGetBySupplierIDType | null | undefined>(null);
+
+  const { data: purchaseOrders, refetch } = useQuery({
+    queryKey: ['PickListSupplierGetByID', value.supplierId],
+    queryFn: () => getPurchaseOrderBySupplierID(value.supplierId!),
   });
 
-  console.log(data);
+  const handlePurchaseOrderSubmitCallback = () => {
+    refetch();
+  };
 
-  const handleClick = () => {
-    //update the picklist item to true if the purchase order is made
+  const handlePurchaseOrderSelectionChanges = (id: any) => {
+    var _selected = purchaseOrders?.filter(x => x.id == id)[0];
+    setSelectedPurchaseOrder(_selected);
+  }
+
+  const handleConfirmAndCloseClick = () => {
     const newPickListWithUpdateItemPurchasedTrue = pickList?.map((item) => {
-      if (item.itemId === value?.itemId) {
-        return { ...item, madeOrderOfTheItems: true };
-      }
+      if (item.itemId === value?.itemId) return { ...item, madeOrderOfTheItems: true, purchaseOrderId: selectedPurchaseOrder?.id };
       return item;
     });
-    console.log(newPickListWithUpdateItemPurchasedTrue);
-    onPickListItems(newPickListWithUpdateItemPurchasedTrue!);
+
+    onPurchaseOrderConfirmationCallback(newPickListWithUpdateItemPurchasedTrue!);
     setIsOpen(false);
-  };
+  }
+
+  const handleCancelClick = () => {
+    const newPickListWithUpdateItemPurchasedTrue = pickList?.map((item) => {
+      if (item.itemId === value?.itemId) return { ...item, madeOrderOfTheItems: false, purchaseOrderId: item.purchaseOrderId };
+      return item;
+    });
+
+    onPurchaseOrderConfirmationCallback(newPickListWithUpdateItemPurchasedTrue!);
+    setIsOpen(false);
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Make Purchase Order</Button>
+        <Button variant="outline" className='mt-6'>{(value.existingOrder != null || value.madeOrderOfTheItems) ? "Edit P.O" : "Add P.O"}</Button>
       </DialogTrigger>
-      <DialogContent className="min-h-screen sm:max-w-[950px]">
-        <h1>supplierID: {value?.supplierID}</h1>
-        <h1>ItemId:{value?.itemId}</h1>
-        <h1>ItemCode:{value?.itemCode}</h1>
-        <Select>
+      <DialogContent>
+        <PurchaseOrderForm
+          onCreateSuccess={handlePurchaseOrderSubmitCallback}
+          supplierId={value?.supplierId!}
+        />
+
+        <h2 className='mb-4 mt-8 text-2xl font-bold'>Existing Purchase Orders</h2>
+        <Select onValueChange={handlePurchaseOrderSelectionChanges}>
           <SelectTrigger>
-            <SelectValue placeholder="View Purchase Order" />
+            <SelectValue placeholder="Select Purchase Order" />
           </SelectTrigger>
           <SelectContent>
-            {data?.map((item) => (
+            {purchaseOrders?.map((item) => (
               <SelectItem key={item.id} value={item.id.toString()}>
                 PO {item.id}: {item.poNumber}
               </SelectItem>
@@ -100,38 +102,42 @@ export function PurchaseDialog({
           </SelectContent>
         </Select>
 
-        <PurchaseOrderForm
-          onCreateSuccess={handleClick}
-          supplierId={value?.supplierID!}
-          itemId={value?.itemId!}
-        />
-        <div className="grid gap-4 py-4">
-          <button onClick={handleClick}>Click</button>
+
+        <span>Order :<span className='font-bold'> {value?.order}</span></span>
+        <span>Item Code :<span className='font-bold'> {value?.itemCode}</span></span>
+        {selectedPurchaseOrder &&
+          <span>{value.existingOrder != null ? 'Updated P.O :' : 'Selected P.O :'}<span className='font-bold mr-2'>{selectedPurchaseOrder.poNumber}</span></span>
+        }
+
+
+        <div className="grid grid-cols-2 gap-4 py-4">
+          <Button
+            disabled={!selectedPurchaseOrder ? true : false}
+            onClick={handleConfirmAndCloseClick}
+            className="w-full">
+            Confirm and Close
+          </Button>
+
+          <Button
+            onClick={handleCancelClick}
+            className="w-full"
+            variant="destructive">
+            Cancel
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-const PurchaseOrderForm = ({
-  supplierId,
-  itemId,
-  onCreateSuccess,
-}: {
-  supplierId: number;
-  itemId: number;
-  onCreateSuccess: () => void;
-}) => {
+const PurchaseOrderForm = ({ supplierId, onCreateSuccess }: { supplierId: number; onCreateSuccess: () => void; }) => {
   const purchaseOrderSchema = z.object({
-    poNumber: z.string().min(1, 'PO number is required'),
-    supplierId: z.number().int().positive('Please select a valid supplier'),
-    orderDate: z.string().min(1, 'Order date is required'),
+    poNumber: z.string().min(1, 'P.O number is required'),
+    supplierId: z.number().int().positive('Supplier is required'),
+    orderDate: z.string(),
     requiredByDate: z.string().min(1, 'Required by date is required'),
-    paymentTerm: z.string().min(1, 'Payment term is required'),
-    statusId: z.number().int().positive('Status ID is required'),
-    description: z.string().min(1, 'Description is required'),
-    quantity: z.coerce.number().int().positive('Quantity is required'),
-    price: z.coerce.number().int().positive('Price is required'),
+    paymentTerm: z.string().min(1, 'Peyment term is required'),
+    statusId: z.number().int(),
   });
 
   const queryClient = useQueryClient();
@@ -143,9 +149,7 @@ const PurchaseOrderForm = ({
       toast.success('Purchase order created successfully');
       onCreateSuccess();
     },
-    onError: (error: any) => {
-      toast.error(error.message);
-    },
+    onError: (error: any) => { toast.error(error.message); },
   });
 
   const form = useForm<z.infer<typeof purchaseOrderSchema>>({
@@ -153,33 +157,21 @@ const PurchaseOrderForm = ({
     defaultValues: {
       poNumber: '',
       supplierId,
-      orderDate: '',
+      orderDate: new Date().toISOString(),
       requiredByDate: '',
       paymentTerm: '',
       statusId: 1,
-      description: '',
-      quantity: 0,
-      price: 0,
     },
   });
 
   const onSubmit = (data: z.infer<typeof purchaseOrderSchema>) => {
-    console.log('Purchase Order Data:', data);
     const payloadData = {
       poNumber: data.poNumber,
       supplierId: data.supplierId,
       orderDate: data.orderDate,
       requiredByDate: data.requiredByDate,
       paymentTerm: data.paymentTerm,
-      statusId: data.statusId,
-      purchaseOrderItems: [
-        {
-          itemId: itemId,
-          description: data.description,
-          quantity: data.quantity,
-          unitPrice: data.price,
-        },
-      ],
+      statusId: data.statusId
     };
     mutation.mutate(payloadData);
     console.log('Payload Data:', payloadData);
@@ -188,7 +180,8 @@ const PurchaseOrderForm = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-2 gap-4">
+        <h2 className='mb-4 text-2xl font-bold'>Create New Purchase Order</h2>
+        <div className="grid grid-cols-3 gap-4">
           <FormField
             control={form.control}
             name="poNumber"
@@ -196,21 +189,7 @@ const PurchaseOrderForm = ({
               <FormItem>
                 <FormLabel>PO Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter PO Number" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="orderDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Order Date</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
+                  <Input {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -238,54 +217,7 @@ const PurchaseOrderForm = ({
               <FormItem>
                 <FormLabel>Payment Term</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter Payment Term" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter Description" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Quantity</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Enter Quantity"
-                    {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Price</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="Enter Price" {...field} />
+                  <Input {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -298,9 +230,8 @@ const PurchaseOrderForm = ({
             e.preventDefault();
             form.handleSubmit(onSubmit)();
           }}
-          className="w-full"
-        >
-          Create Purchase Order
+          className="w-full">
+          Create New
         </Button>
       </form>
     </Form>

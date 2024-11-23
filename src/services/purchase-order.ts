@@ -78,12 +78,9 @@ export const updatePurchaseOrder = async (data: PurchaseOrderUpdateType) => {
   }
 };
 
-export const getPurchaseOrderBySupplierID = async (
-  id: number
-): Promise<PurchaseOrderGetBySupplierIDType[]> => {
+export const getPurchaseOrderBySupplierID = async (id: number): Promise<PurchaseOrderGetBySupplierIDType[]> => {
   try {
-    const { data } = await apiClientWithClientHeader.get<
-      ApiResponse<PurchaseOrderGetBySupplierIDType[]>
+    const { data } = await apiClientWithClientHeader.get<      ApiResponse<PurchaseOrderGetBySupplierIDType[]>
     >(`/PurchaseOrder/GetBySupplierId?SupplierId=${id}`);
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');

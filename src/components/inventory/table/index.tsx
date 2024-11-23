@@ -81,6 +81,11 @@ function DataTable<T>({
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     state: { columnFilters, sorting },
+    initialState: {
+      pagination: {
+        pageSize: 50
+      }
+    }
   });
 
   return (

@@ -58,6 +58,11 @@ export default function GenericTable<T>({
       columnFilters,
       sorting,
     },
+    initialState: {
+      pagination: {
+        pageSize: 50
+      }
+    }
   });
 
   return (

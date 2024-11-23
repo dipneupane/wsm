@@ -26,7 +26,7 @@ interface IPickListItems {
   fireRating?: string;
   size?: string;
   finish?: string;
-  order?: string;
+  order?: number;
   date?: string;
   notes?: string;
   categoryId?: number;
@@ -67,7 +67,7 @@ export type PickListGetByIdType = {
     categoryName?: string;
     size?: string;
     finish?: string;
-    order?: string;
+    order?: number;
     date?: string;
     notes?: string;
   }[];

@@ -10,7 +10,7 @@ import { getAllInventoryItems } from '@/services/inventory-item';
 import { createPickList } from '@/services/pick-list';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronsUpDown, Loader2Icon, Trash2Icon } from 'lucide-react';
+import { ChevronsUpDown, Loader2Icon, Trash2Icon, PlusCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -70,11 +70,11 @@ const pickListSchema = z.object({
   customerId: z.number().int().positive('required'),
   priorityId: z.number().int(),
   requiredDate: z.string().min(1, 'required'),
-  project: z.string().optional(),
-  aptHouseNumber: z.string().optional(),
-  doorType: z.string().optional(),
-  ironMongeryFinish: z.string().optional(),
-  frameFinish: z.string().optional(),
+  project: z.string().min(1, 'required'),
+  aptHouseNumber: z.string().min(1, 'required'),
+  doorType: z.string().min(1, 'required'),
+  ironMongeryFinish: z.string().min(1, 'required'),
+  frameFinish: z.string().min(1, 'required')
 });
 
 export type pickListItems = {
@@ -84,10 +84,12 @@ export type pickListItems = {
   fireRating?: string;
   size?: string;
   finish?: string;
-  order?: string;
+  order: number;
   date?: string;
   notes?: string;
-  supplierID?: number;
+  supplierId?: number;
+  existingOrder?: number;
+  purchaseOrderId?: number;
   madeOrderOfTheItems?: boolean;
 };
 
@@ -131,12 +133,11 @@ const PickUpListRootPage = () => {
   });
 
   const [pickListItems, setPickListItems] = useState<pickListItems[]>([]);
-  const [additionalInformation, setAdditionalInformation] = useState<
-    AdditionalInformations[]
-  >([]);
+  const [additionalInformation, setAdditionalInformation] = useState<AdditionalInformations[]>([]);
 
   const queryClient = useQueryClient();
   const router = useRouter();
+
   const mutation = useMutation({
     mutationFn: createPickList,
     onSuccess: () => {
@@ -148,16 +149,10 @@ const PickUpListRootPage = () => {
       toast.error(error.message);
     },
   });
-  const handleItemFieldChange = (
-    itemId: number,
-    field: keyof Omit<pickListItems, 'categoryId' | 'itemId'>,
-    value: string
-  ) => {
-    setPickListItems((prevItems) =>
-      prevItems.map((item) =>
-        item.itemId === itemId ? { ...item, [field]: value } : item
-      )
-    );
+
+  const handleItemFieldChange = (itemId: number, field: keyof Omit<pickListItems, 'categoryId' | 'itemId'>, value: string) => {
+    debugger;
+    setPickListItems((prevItems) => prevItems.map((item) => item.itemId === itemId ? { ...item, [field]: value } : item));
   };
 
   const onSubmit = async (values: z.infer<typeof pickListSchema>) => {
@@ -171,7 +166,10 @@ const PickUpListRootPage = () => {
       order: p.order,
       date: p.date ?? new Date(Date.now()).toISOString(),
       notes: p.notes,
+      purchaseOrderId: p.purchaseOrderId
     }));
+
+    debugger;
     const data = {
       ...validatedData,
       pickListItems: pickListItemsWithoutCategory,
@@ -211,11 +209,7 @@ const PickUpListRootPage = () => {
                     <Input
                       placeholder="Enter reference number"
                       {...field}
-                      className={
-                        form.formState.errors.referenceNo
-                          ? 'border-red-500'
-                          : ''
-                      }
+                      className={form.formState.errors.referenceNo ? 'border-red-500' : ''}
                     />
                   </FormControl>
                   <FormMessage />
@@ -233,11 +227,7 @@ const PickUpListRootPage = () => {
                     onValueChange={(value) => field.onChange(Number(value))}
                     value={field.value ? field.value.toString() : undefined}
                   >
-                    <SelectTrigger
-                      className={
-                        form.formState.errors.priorityId ? 'border-red-500' : ''
-                      }
-                    >
+                    <SelectTrigger className={form.formState.errors.priorityId ? 'border-red-500' : ''}>
                       <SelectValue placeholder="Select Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -333,7 +323,7 @@ const PickUpListRootPage = () => {
               name="aptHouseNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>AptHouseNumber </FormLabel>
+                  <FormLabel>Apt House Number </FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -359,7 +349,7 @@ const PickUpListRootPage = () => {
               name="ironMongeryFinish"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Iron Mogery Finish</FormLabel>
+                  <FormLabel>Ironmogery Finish</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -396,9 +386,8 @@ const PickUpListRootPage = () => {
           </div>
 
           <h2 className='mb-4 text-2xl font-bold'>Items Informations</h2>
-          {isCategotyLoading && (
-            <Loader2Icon className="animate-spin text-primary" />
-          )}
+          {isCategotyLoading && (<Loader2Icon className="animate-spin text-primary" />)}
+
           {categoryData?.map((c, index) => (
             <div key={index} className="border-b">
               {/* top */}
@@ -423,38 +412,33 @@ const PickUpListRootPage = () => {
                       <CommandEmpty>No items found.</CommandEmpty>
                       <CommandGroup>
                         <ScrollArea className="h-64">
-                          {inventoryItemsList?.map(
-                            (item) =>
-                              item.categoryId === c.key && (
-                                <>
-                                  {
-                                    <CommandItem
-                                      disabled={pickListItems?.some(
-                                        (i) => i.itemId === item.id
-                                      )}
-                                      onSelect={() =>
-                                        setPickListItems((prev) => [
-                                          ...prev,
-                                          {
-                                            itemId: item.id,
-                                            categoryId: c.key,
-                                            itemCode:
-                                              item.description +
-                                              '-' +
-                                              item.code,
-                                            madeOrderOfTheItems: false,
-                                            supplierID: item.supplierId,
-                                          },
-                                        ])
-                                      }
-                                      key={item.categoryId}
-                                    >
-                                      {item.categoryId}-{item.id} -{item.code} -{' '}
-                                      {item.description}
-                                    </CommandItem>
-                                  }
-                                </>
-                              )
+                          {inventoryItemsList?.map((item) =>
+                            item.categoryId === c.key && (
+                              <>
+                                {
+                                  <CommandItem
+                                    disabled={pickListItems?.some((i) => i.itemId === item.id)}
+                                    onSelect={() =>
+                                      setPickListItems((prev) => [
+                                        ...prev,
+                                        {
+                                          itemId: item.id,
+                                          categoryId: c.key,
+                                          itemCode: item.description + '-' + item.code,
+                                          madeOrderOfTheItems: false,
+                                          supplierId: item.supplierId,
+                                          order: 1
+                                        },
+                                      ])
+                                    }
+                                    key={item.categoryId}
+                                  >
+                                    {item.categoryId}-{item.id} -{item.code} -{' '}
+                                    {item.description}
+                                  </CommandItem>
+                                }
+                              </>
+                            )
                           )}
                         </ScrollArea>
                       </CommandGroup>
@@ -463,266 +447,204 @@ const PickUpListRootPage = () => {
                 </Popover>
               </div>
 
-              {/*  additional fields  */}
-              <div className="">
-                {pickListItems?.map(
-                  (item) =>
-                    item.categoryId === c.key && (
-                      <div
-                        key={item.itemId}
-                        className={cn({
-                          'text-primary':
-                            Number(item.order) <=
-                            (inventoryItemsList?.find(
-                              (i) => i.id === item.itemId
-                            )?.stock ?? 0),
-                          'text-orange-200': pickListItems?.find(
-                            (i) => i.itemId === item.itemId
-                          )?.madeOrderOfTheItems,
-                          'text-red-500':
-                            Number(item.order) >
-                            (inventoryItemsList?.find(
-                              (i) => i.id === item.itemId
-                            )?.stock ?? 0) &&
-                            !pickListItems?.find(
-                              (i) => i.itemId === item.itemId
-                            )?.madeOrderOfTheItems,
-                          'flex items-center justify-center gap-x-2 py-2': true,
-                        })}
-                      >
+              {pickListItems?.map((item) => {
+                const isOrderConfirmed = item.madeOrderOfTheItems;
+                const stock = (inventoryItemsList?.find((i) => i.id === item.itemId)?.stock ?? 0);
+                return (
+                  item.categoryId === c.key && (<div key={item.itemId} className={cn({
+                    'bg-green-300': (Number(item.order) <= (stock) || isOrderConfirmed),
+                    'bg-red-300': Number(item.order) <= 0 || Number(item.order) > (stock) && !isOrderConfirmed,
+                    'flex items-center justify-center gap-x-2 py-2 border-b-2 border-white': true,
+                  })}>
+
+                    <div className="grid grid-cols-9 gap-4 px-5 rounded">
+                      <div className="w-3/9">
+                        <Label>Item Code</Label>
+                        <Input value={item.itemCode} disabled type="text" />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Fire Rating</Label>
+                        <Input
+                          type="text"
+                          value={item.fireRating || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'fireRating', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Size</Label>
+                        <Input
+                          type="text"
+                          value={item.size || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'size', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Finish</Label>
+                        <Input
+                          type="text"
+                          value={item.finish || ''} onChange={(e) => handleItemFieldChange(item.itemId, 'finish', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label className="">
+                          Order
+                          <span className='mt-2 ml-2 text-xs'>
+                            (Stock: {inventoryItemsList?.find((i) => i.id === item.itemId)?.stock})
+                          </span>
+                        </Label>
+
+                        <Input
+                          type="number"
+                          min={1}
+                          value={item.order || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'order', e.target.value)}
+                        />
+                        <div className='mt-2 ml-2 text-xs'>
+                          {pickListItems?.find((i) => i.itemId === item.itemId)?.madeOrderOfTheItems && item.order > 0 &&
+                            (<span className="text-xs">{item.order} P.O Confirmed</span>)}
+                        </div>
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Date</Label>
+                        <Input
+                          type="date"
+                          value={item.date || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'date', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Notes</Label>
+                        <Input
+                          type="text"
+                          value={item.notes || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'notes', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9 grid grid-cols-2 gap-2 content-start d-flex">
+                        {pickListItems &&
+                          <PurchaseDialog
+                            //@ts-ignore
+                            pickList={pickListItems}
+                            //@ts-ignore
+                            onPurchaseOrderConfirmationCallback={setPickListItems}
+                            //@ts-ignore
+                            value={pickListItems.find((i) => i.itemId === item.itemId)}
+                          />
+                        }
+
                         <Button
-                          className="translate-y-3"
+                          className="translate-y-3 mt-3"
                           variant="destructive"
-                          onClick={() =>
-                            setPickListItems((prev) =>
-                              prev.filter((v) => v.itemId !== item.itemId)
-                            )
-                          }
+                          onClick={() => setPickListItems((prev) => prev.filter((v) => v.itemId !== item.itemId))}
                         >
                           <Trash2Icon />
                         </Button>
+
                         <div className="hidden">
                           <Label>Id</Label>
                           <Input value={item.itemId} disabled type="text" />
                         </div>
-
-                        <div>
-                          <Label>Item Code</Label>
-                          <Input value={item.itemCode} disabled type="text" />
-                        </div>
-
-                        <div className="">
-                          <Label>Fire Rating</Label>
-                          <Input
-                            type="text"
-                            value={item.fireRating || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'fireRating',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Size</Label>
-                          <Input
-                            type="text"
-                            value={item.size || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'size',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Finish</Label>
-                          <Input
-                            type="text"
-                            value={item.finish || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'finish',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label className="">Order</Label>
-                          <span className="ml-2 text-xs">
-                            Stock:
-                            {
-                              inventoryItemsList?.find(
-                                (i) => i.id === item.itemId
-                              )?.stock
-                            }
-                          </span>
-                          <Input
-                            type="number"
-                            value={item.order || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'order',
-                                e.target.value
-                              )
-                            }
-                          />
-                          {pickListItems?.find((i) => i.itemId === item.itemId)
-                            ?.madeOrderOfTheItems ? (
-                            <span className="text-xs">PickListAdded</span>
-                          ) : (
-                            ''
-                          )}
-                          {Number(item.order) >
-                            (inventoryItemsList?.find((i) => i.id === item.itemId)
-                              ?.stock ?? 0) ? (
-                            <span>
-                              <PurchaseDialog
-                                pickList={pickListItems}
-                                onPickListItems={setPickListItems}
-                                value={pickListItems?.find(
-                                  (i) => i.itemId === item.itemId
-                                )}
-                              />
-                            </span>
-                          ) : (
-                            ''
-                          )}
-                        </div>
-
-                        <div className="">
-                          <Label>Date</Label>
-                          <Input
-                            type="date"
-                            value={item.date || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'date',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Notes</Label>
-                          <Input
-                            type="text"
-                            value={item.notes || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'notes',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
                       </div>
-                    )
-                )}
-              </div>
+                    </div>
+                  </div>
+                  ))
+              })}
             </div>
           ))}
 
-          <div className="">
-            <h2 className='mb-4 text-2xl font-bold'>Additional Informations</h2>
 
-            <div className="flex flex-col">
-              {additionalInformation.map((info, index) => (
-                <div className="flex items-center">
-                  <div className="mx-4 cursor-pointer">
-                    <Button
-                      className="translate-y-3"
-                      variant="destructive"
-                      onClick={() => setAdditionalInformation((prev) => prev.filter((_, idx) => idx !== index))}>
-                      <Trash2Icon />
-                    </Button>
-                  </div>
-                  <div className="mr-5">
-                    <Label>Fire Rating</Label>
-                    <Input
-                      key={index}
-                      value={info.fireRating}
-                      onChange={(e) => {
-                        setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, fireRating: e.target.value } : i));
-                      }}
-                    />
-                  </div>
-                  <div className="mr-5">
-                    <Label>Handling</Label>
-                    <Input
-                      key={index}
-                      value={info.handling}
-                      onChange={(e) => {
-                        setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, handling: e.target.value } : i));
-                      }}
-                    />
-                  </div>
-                  <div className="mr-5">
-                    <Label>LockType</Label>
-                    <Input
-                      key={index}
-                      value={info.lockType}
-                      onChange={(e) => {
-                        setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, lockType: e.target.value } : i));
-                      }}
-                    />
-                  </div>
-                  <div className="mr-5">
-                    <Label>UnderCut</Label>
-                    <Input
-                      key={index}
-                      value={info.underCut}
-                      onChange={(e) => {
-                        setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, underCut: e.target.value } : i)
-                        );
-                      }}
-                    />
-                  </div>
-                  <div className="mr-5">
-                    <Label> Wall ThickNess</Label>
-                    <Input
-                      key={index}
-                      value={info.wallThickNess}
-                      onChange={(e) => {
-                        setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, wallThickNess: e.target.value } : i)
-                        );
-                      }}
-                    />
-                  </div>
+          <h2 className='mb-4 text-2xl font-bold'>Additional Informations</h2>
+          <div className="flex flex-col">
+            {additionalInformation.map((info, index) => (
+              <div className="flex items-center">
+                <div className="mr-5">
+                  <Label>Fire Rating</Label>
+                  <Input
+                    key={index}
+                    value={info.fireRating}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, fireRating: e.target.value } : i));
+                    }}
+                  />
                 </div>
-              ))}
-            </div>
+                <div className="mr-5">
+                  <Label>Handling</Label>
+                  <Input
+                    key={index}
+                    value={info.handling}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, handling: e.target.value } : i));
+                    }}
+                  />
+                </div>
+                <div className="mr-5">
+                  <Label>LockType</Label>
+                  <Input
+                    key={index}
+                    value={info.lockType}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, lockType: e.target.value } : i));
+                    }}
+                  />
+                </div>
+                <div className="mr-5">
+                  <Label>UnderCut</Label>
+                  <Input
+                    key={index}
+                    value={info.underCut}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, underCut: e.target.value } : i)
+                      );
+                    }}
+                  />
+                </div>
+                <div className="mr-5">
+                  <Label> Wall Thickness</Label>
+                  <Input
+                    key={index}
+                    value={info.wallThickNess}
+                    onChange={(e) => {
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, wallThickNess: e.target.value } : i)
+                      );
+                    }}
+                  />
+                </div>
 
+                <div className="mx-4 cursor-pointer">
+                  <Button
+                    className="translate-y-3"
+                    variant="destructive"
+                    onClick={() => setAdditionalInformation((prev) => prev.filter((_, idx) => idx !== index))}>
+                    <Trash2Icon />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
 
-            <div
-              className="w-fit cursor-pointer rounded-sm bg-primary p-2 text-black mt-5"
-              onClick={(e) => {
-                setAdditionalInformation((prev) => [...prev,
-                {
-                  fireRating: '',
-                  handling: '',
-                  lockType: '',
-                  note: '',
-                  underCut: '',
-                  wallThickNess: '',
-                },
-                ]);
-              }}
-            >
-              Add New
-            </div>
+          <div
+            className="w-fit cursor-pointer rounded-sm bg-primary p-2 text-black mt-5"
+            onClick={(e) => {
+              setAdditionalInformation((prev) => [...prev,
+              {
+                fireRating: '',
+                handling: '',
+                lockType: '',
+                note: '',
+                underCut: '',
+                wallThickNess: '',
+              },
+              ]);
+            }}
+          >
+            Add New
           </div>
 
           <Button

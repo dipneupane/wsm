@@ -8,7 +8,6 @@ import { getAllCategories } from '@/services/categories';
 import { getAllCustomerInformation } from '@/services/customer';
 import { getAllInventoryItems } from '@/services/inventory-item';
 import {
-  createPickList,
   getPickListById,
   updatePickList,
 } from '@/services/pick-list';
@@ -71,15 +70,16 @@ const PriorityLevel = {
 
 // Create the Zod schema
 const pickListSchema = z.object({
-  referenceNo: z.string().min(1, 'Reference number is required'),
-  customerId: z.number().int().positive('Please select a customer'),
+  id: z.number().min(1),
+  referenceNo: z.string().min(1, 'required'),
+  customerId: z.number().int().positive('required'),
   priorityId: z.number().int(),
-  requiredDate: z.string(),
-  project: z.string().optional(),
-  aptHouseNumber: z.string().optional(),
-  doorType: z.string().optional(),
-  ironMongeryFinish: z.string().optional(),
-  frameFinish: z.string().optional(),
+  requiredDate: z.string().min(1, 'required'),
+  project: z.string().min(1, 'required'),
+  aptHouseNumber: z.string().min(1, 'required'),
+  doorType: z.string().min(1, 'required'),
+  ironMongeryFinish: z.string().min(1, 'required'),
+  frameFinish: z.string().min(1, 'required')
 });
 
 interface PickListProps {
@@ -100,6 +100,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   const form = useForm<z.infer<typeof pickListSchema>>({
     resolver: zodResolver(pickListSchema),
     defaultValues: {
+      id: pickListDataById?.id,
       referenceNo: pickListDataById?.referenceNo,
       customerId: pickListDataById?.customerId,
       priorityId: pickListDataById?.priorityId ?? 2,
@@ -121,7 +122,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   const { data: inventoryItemsList } = useQuery({
     queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
     queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
-  });  
+  });
 
   const { data: customerList } = useQuery({
     queryKey: CUSTOMER_QUERY_KEY,
@@ -131,25 +132,27 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   type pickListItems = {
     categoryId?: number;
     itemId: number;
+    itemCode: string;
     fireRating?: string;
     size?: string;
     finish?: string;
-    order?: string;
+    order?: number;
     date?: string;
     notes?: string;
+    existingOrder?: number;
+    purchaseOrderId?: number;
     madeOrderOfTheItems?: boolean;
   };
 
   const [pickListItems, setPickListItems] = React.useState<pickListItems[]>([]);
-  const [additionalInformation, setAdditionalInformation] = useState<
-    AdditionalInformations[]
-  >([]);
+  const [additionalInformation, setAdditionalInformation] = useState<AdditionalInformations[]>([]);
   const queryClient = useQueryClient();
   const router = useRouter();
 
   useEffect(() => {
     if (pickListDataById) {
       form.reset({
+        id: pickListDataById.id,
         referenceNo: pickListDataById.referenceNo,
         customerId: pickListDataById.customerId,
         priorityId: pickListDataById.priorityId,
@@ -188,11 +191,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
     field: keyof Omit<pickListItems, 'categoryId' | 'itemId'>,
     value: string
   ) => {
-    setPickListItems((prevItems) =>
-      prevItems.map((item) =>
-        item.itemId === itemId ? { ...item, [field]: value } : item
-      )
-    );
+    setPickListItems((prevItems) => prevItems.map((item) => item.itemId === itemId ? { ...item, [field]: value } : item));
   };
 
   const onSubmit = async (values: z.infer<typeof pickListSchema>) => {
@@ -205,12 +204,14 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
       order: p.order,
       date: p.date ?? new Date(Date.now()).toISOString(),
       notes: p.notes,
+      purchaseOrderId: p.purchaseOrderId
     }));
     const data = {
       ...validatedData,
       pickListItems: pickListItemsWithoutCategory,
       additionalInformations: additionalInformation,
     };
+    debugger;
     mutation.mutateAsync(data);
   };
 
@@ -218,6 +219,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <h2 className='mb-4 text-2xl font-bold'>Basic Informations</h2>
           <div className="grid grid-cols-3 gap-4">
             <FormField
               control={form.control}
@@ -290,8 +292,8 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                       >
                         {field.value && customerList
                           ? customerList.find(
-                              (customer) => customer.id === field.value
-                            )?.fullName
+                            (customer) => customer.id === field.value
+                          )?.fullName
                           : 'Select Customer'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -351,7 +353,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
               name="aptHouseNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>AptHouseNumber </FormLabel>
+                  <FormLabel>Apt House Number </FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -377,7 +379,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
               name="ironMongeryFinish"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Iron Mogery Finish</FormLabel>
+                  <FormLabel>Ironmogery Finish</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -412,9 +414,9 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
               )}
             />
           </div>
-          {isCategotyLoading && (
-            <Loader2Icon className="animate-spin text-primary" />
-          )}
+
+          <h2 className='mb-4 text-2xl font-bold'>Items Informations</h2>
+          {isCategotyLoading && (<Loader2Icon className="animate-spin text-primary" />)}
           {categoryData?.map((c, index) => (
             <div key={index} className="border-b">
               {/* top */}
@@ -445,15 +447,17 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                                 <>
                                   {
                                     <CommandItem
-                                      disabled={pickListItems?.some(
-                                        (i) => i.itemId === item.id
-                                      )}
+                                      disabled={pickListItems?.some((i) => i.itemId === item.id)}
                                       onSelect={() =>
                                         setPickListItems((prev) => [
                                           ...prev,
                                           {
                                             itemId: item.id,
                                             categoryId: c.key,
+                                            itemCode: item.description + '-' + item.code,
+                                            madeOrderOfTheItems: false,
+                                            supplierId: item.supplierId,
+                                            order: 1
                                           },
                                         ])
                                       }
@@ -474,39 +478,105 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
               </div>
 
               {/*  additional fields  */}
-              <div className="">
-                {pickListItems?.map(
-                  (item) =>
-                    item.categoryId === c.key && (
-                      <div
-                        className={cn({
-                          'text-primary':
-                            Number(item.order) <=
-                            (inventoryItemsList?.find(
-                              (i) => i.id === item.itemId
-                            )?.stock ?? 0),
-                          'text-orange-200': pickListItems?.find(
-                            (i) => i.itemId === item.itemId
-                          )?.madeOrderOfTheItems,
-                          'text-red-500':
-                            Number(item.order) >
-                              (inventoryItemsList?.find(
-                                (i) => i.id === item.itemId
-                              )?.stock ?? 0) &&
-                            !pickListItems?.find(
-                              (i) => i.itemId === item.itemId
-                            )?.madeOrderOfTheItems,
-                          'flex items-center justify-center gap-x-2 py-2': true,
-                        })}
-                      >
+              {pickListItems?.map((item) => {
+                const isOrderConfirmed = item.madeOrderOfTheItems;
+                const stock = inventoryItemsList?.find((i) => i.id === item.itemId)?.stock ?? 0;
+                const hasExistingOrder = (typeof item.purchaseOrderId != 'undefined' && item.purchaseOrderId > 0) ? true : false;
+
+                return (
+                  item.categoryId === c.key && (<div className={cn({
+                    'bg-green-300': (Number(item.order) <= (stock) || isOrderConfirmed) || hasExistingOrder,
+                    'bg-red-300': Number(item.order) <= 0 || Number(item.order) > (stock) && !isOrderConfirmed && !hasExistingOrder,
+                    'flex items-center justify-center gap-x-2 py-2 border-b-2 border-white': true,
+                  })}>
+
+                    <div className="grid grid-cols-9 gap-4 px-5 rounded">
+                      <div className="w-3/9">
+                        <Label>Item Code</Label>
+                        <Input value={item.itemCode} disabled type="text" />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Fire Rating</Label>
+                        <Input
+                          type="text"
+                          value={item.fireRating || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'fireRating', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Size</Label>
+                        <Input
+                          type="text"
+                          value={item.size || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'size', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Finish</Label>
+                        <Input
+                          type="text"
+                          value={item.finish || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'finish', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label className="">
+                          Order
+                          <span className='mt-2 ml-2 text-xs'>
+                            (Stock: {inventoryItemsList?.find((i) => i.id === item.itemId)?.stock})
+                          </span>
+                        </Label>
+
+                        <Input
+                          type="number"
+                          min={1}
+                          value={item.order || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'order', e.target.value)}
+                        />
+                        <div className='mt-2 ml-2 text-xs'>
+                          {pickListItems?.find((i) => i.itemId === item.itemId)?.madeOrderOfTheItems && (item.order && item.order > 0) &&
+                            (<span className="text-xs">{item.order} P.O Confirmed</span>)}
+                        </div>
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Date</Label>
+                        <Input
+                          type="date"
+                          value={item.date || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'date', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9">
+                        <Label>Notes</Label>
+                        <Input
+                          type="text"
+                          value={item.notes || ''}
+                          onChange={(e) => handleItemFieldChange(item.itemId, 'notes', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="w-1/9 grid grid-cols-2 gap-2 content-start d-flex">
+                        {pickListItems &&
+                          <PurchaseDialog
+                            //@ts-ignore
+                            pickList={pickListItems}
+                            //@ts-ignore
+                            onPurchaseOrderConfirmationCallback={setPickListItems}
+                            //@ts-ignore
+                            value={pickListItems.find((i) => i.itemId === item.itemId)}
+                          />
+                        }
+
                         <Button
-                          className="translate-y-3"
+                          className="translate-y-3 mt-3"
                           variant="destructive"
-                          onClick={() =>
-                            setPickListItems((prev) =>
-                              prev.filter((v) => v.itemId !== item.itemId)
-                            )
-                          }
+                          onClick={() => setPickListItems((prev) => prev.filter((v) => v.itemId !== item.itemId))}
                         >
                           <Trash2Icon />
                         </Button>
@@ -514,271 +584,99 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                           <Label>Id</Label>
                           <Input value={item.itemId} disabled type="text" />
                         </div>
-
-                        <div className="">
-                          <Label>Fire Rating</Label>
-                          <Input
-                            type="text"
-                            placeholder="fireRating"
-                            value={item.fireRating || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'fireRating',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Size</Label>
-                          <Input
-                            type="text"
-                            placeholder="size"
-                            value={item.size || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'size',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Finish</Label>
-                          <Input
-                            type="text"
-                            placeholder="finish"
-                            value={item.finish || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'finish',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-                        <div
-                          className={cn({
-                            'text-primary':
-                              Number(item.order) <=
-                              (inventoryItemsList?.find(
-                                (i) => i.id === item.itemId
-                              )?.stock ?? 0),
-                            'text-orange-200': pickListItems?.find(
-                              (i) => i.itemId === item.itemId
-                            )?.madeOrderOfTheItems,
-                            'text-red-500':
-                              Number(item.order) >
-                                (inventoryItemsList?.find(
-                                  (i) => i.id === item.itemId
-                                )?.stock ?? 0) &&
-                              !pickListItems?.find(
-                                (i) => i.itemId === item.itemId
-                              )?.madeOrderOfTheItems,
-                            'flex flex-col items-center': true,
-                          })}
-                        >
-                          <Label className="">Order</Label>
-                          <span className="text-xs text-red-500">
-                            Stock:
-                            {
-                              inventoryItemsList?.find(
-                                (i) => i.id === item.itemId
-                              )?.stock
-                            }
-                          </span>
-                          <Input
-                            type="number"
-                            value={item.order || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'order',
-                                e.target.value
-                              )
-                            }
-                          />
-                          {pickListItems?.find((i) => i.itemId === item.itemId)
-                            ?.madeOrderOfTheItems ? (
-                            <span className="text-xs">PickListAdded</span>
-                          ) : (
-                            'no'
-                          )}
-                          {Number(item.order) >
-                          (inventoryItemsList?.find((i) => i.id === item.itemId)
-                            ?.stock ?? 0) ? (
-                            <span>
-                              <PurchaseDialog
-                                //@ts-ignore
-                                pickList={pickListItems}
-                                //@ts-ignore
-                                onPickListItems={setPickListItems}
-                                //@ts-ignore
-                                value={pickListItems.find(
-                                  (i) => i.itemId === item.itemId
-                                )}
-                              />
-                            </span>
-                          ) : (
-                            ''
-                          )}
-                        </div>
-
-                        <div className="">
-                          <Label>Date</Label>
-                          <Input
-                            type="date"
-                            placeholder="date"
-                            value={item.date || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'date',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="">
-                          <Label>Notes</Label>
-                          <Input
-                            type="text"
-                            placeholder="notes"
-                            value={item.notes || ''}
-                            onChange={(e) =>
-                              handleItemFieldChange(
-                                item.itemId,
-                                'notes',
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
                       </div>
-                    )
-                )}
-              </div>
+                    </div>
+                  </div>
+                  ))
+              })}
             </div>
           ))}
-          <div className="">
-            <h2>Additinonal Information</h2>
-            <div
-              className="w-fit cursor-pointer rounded-xl bg-primary p-2 text-black"
-              onClick={(e) => {
-                setAdditionalInformation((prev) => [
-                  ...prev,
-                  {
-                    fireRating: '',
-                    handling: '',
-                    lockType: '',
-                    note: '',
-                    underCut: '',
-                    wallThickNess: '',
-                  },
-                ]);
-              }}
-            >
-              Add
-            </div>
-          </div>
+
+          <h2 className='mb-4 text-2xl font-bold'>Additional Informations</h2>
           <div className="flex flex-col">
             {additionalInformation.map((info, index) => (
               <div className="flex items-center">
-                <h3>{index + 1}</h3>
-                <div className="">
-                  <span
-                    onClick={() =>
-                      setAdditionalInformation((prev) =>
-                        prev.filter((_, idx) => idx !== index)
-                      )
-                    }
-                  >
-                    <Trash2Icon />
-                  </span>
-                </div>
-                <div className="">
+                <div className="mr-5">
                   <Label>Fire Rating</Label>
                   <Input
                     key={index}
                     value={info.fireRating}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) =>
-                        prev.map((i, idx) =>
-                          idx === index
-                            ? { ...i, fireRating: e.target.value }
-                            : i
-                        )
-                      );
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, fireRating: e.target.value } : i));
                     }}
                   />
                 </div>
-                <div className="">
+                <div className="mr-5">
                   <Label>Handling</Label>
                   <Input
                     key={index}
                     value={info.handling}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) =>
-                        prev.map((i, idx) =>
-                          idx === index ? { ...i, handling: e.target.value } : i
-                        )
-                      );
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, handling: e.target.value } : i));
                     }}
                   />
                 </div>
-                <div className="">
+                <div className="mr-5">
                   <Label>LockType</Label>
                   <Input
                     key={index}
                     value={info.lockType}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) =>
-                        prev.map((i, idx) =>
-                          idx === index ? { ...i, lockType: e.target.value } : i
-                        )
-                      );
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, lockType: e.target.value } : i));
                     }}
                   />
                 </div>
-                <div className="">
+                <div className="mr-5">
                   <Label>UnderCut</Label>
                   <Input
                     key={index}
                     value={info.underCut}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) =>
-                        prev.map((i, idx) =>
-                          idx === index ? { ...i, underCut: e.target.value } : i
-                        )
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, underCut: e.target.value } : i)
                       );
                     }}
                   />
                 </div>
-                <div className="">
-                  <Label> Wall ThickNess</Label>
+                <div className="mr-5">
+                  <Label> Wall Thickness</Label>
                   <Input
                     key={index}
                     value={info.wallThickNess}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) =>
-                        prev.map((i, idx) =>
-                          idx === index
-                            ? { ...i, wallThickNess: e.target.value }
-                            : i
-                        )
+                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, wallThickNess: e.target.value } : i)
                       );
                     }}
                   />
                 </div>
+
+                <div className="mx-4 cursor-pointer">
+                  <Button
+                    className="translate-y-3"
+                    variant="destructive"
+                    onClick={() => setAdditionalInformation((prev) => prev.filter((_, idx) => idx !== index))}>
+                    <Trash2Icon />
+                  </Button>
+                </div>
               </div>
             ))}
+
+            <div className="w-fit cursor-pointer rounded-sm bg-primary p-2 text-black mt-5"
+              onClick={(e) => {
+                setAdditionalInformation((prev) => [...prev,
+                {
+                  fireRating: '',
+                  handling: '',
+                  lockType: '',
+                  note: '',
+                  underCut: '',
+                  wallThickNess: '',
+                },
+                ]);
+              }}>
+              Add New
+            </div>
           </div>
+
           <Button
             type="submit"
             className="w-full"

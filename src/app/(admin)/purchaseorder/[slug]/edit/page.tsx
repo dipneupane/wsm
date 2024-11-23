@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -99,7 +99,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     queryKey: SUPPLIER_QUERY_KEY,
     queryFn: getAllSupplierInformation,
   });
-  
+
   const { data: inventoryItemsList } = useQuery({
     queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
     queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
@@ -139,9 +139,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     unitPrice: number;
   };
 
-  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<
-    PurchaseOrderItems[]
-  >([]);
+  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<PurchaseOrderItems[]>([]);
 
   // Prefill data when fetched
   useEffect(() => {
@@ -158,15 +156,15 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     }
   }, [purchaseOrderData, form]);
 
-  const handleAddItem = (itemId: number, itemCode: string) => {
+  const handleAddItem = (itemId: number, itemCode: string, itemCost: number) => {
     setPurchaseOrderItems((prev: any) => [
       ...prev,
       {
         itemId,
-        itemCode,
+        itemCode: itemCode,
         description: '',
-        unitPrice: '',
-        quantity: '',
+        unitPrice: itemCost,
+        quantity: 1,
       },
     ]);
   };
@@ -273,8 +271,8 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       >
                         {field.value && supplierList
                           ? supplierList.find(
-                              (supplier: any) => supplier.id === field.value
-                            )?.fullName
+                            (supplier: any) => supplier.id === field.value
+                          )?.fullName
                           : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -434,7 +432,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                               disabled={purchaseOrderItems?.some(
                                 (i) => i.itemId === item.id
                               )}
-                              onSelect={() => handleAddItem(item.id, item.code)}
+                              onSelect={() => handleAddItem(item.id, item.code, item.cost)}
                             >
                               {item.id} - {item.code} - {item.description}
                             </CommandItem>
@@ -454,23 +452,10 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                   key={item.itemId}
                   className="flex items-center justify-center gap-x-2 py-2"
                 >
-                  <Button
-                    type="button"
-                    className="translate-y-3"
-                    variant="destructive"
-                    onClick={() =>
-                      setPurchaseOrderItems((prev: any) =>
-                        prev.filter((v: any) => v.itemId !== item.itemId)
-                      )
-                    }
-                  >
-                    <Trash2Icon />
-                  </Button>
-
                   <div>
                     <Label>Item Code</Label>
                     <Input
-                      value={item.itemCode || 'N/A'}
+                      value={item.itemCode}
                       disabled
                       type="text"
                     />
@@ -500,6 +485,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       id={`quantity-${item.id}`}
                       type="number"
                       required
+                      min={1}
                       value={item.quantity}
                       onChange={(e) =>
                         handleItemFieldChange(
@@ -525,6 +511,14 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       }
                     />
                   </div>
+
+                  <Button
+                    type="button"
+                    className="translate-y-3"
+                    variant="destructive"
+                    onClick={() => setPurchaseOrderItems((prev: any) => prev.filter((v: any) => v.itemId !== item.itemId))}>
+                    <Trash2Icon />
+                  </Button>
                 </div>
               ))}
             </div>

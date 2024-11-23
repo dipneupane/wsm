@@ -9,7 +9,7 @@ import { createPurchaseOrder } from '@/services/purchase-order';
 import { getAllSupplierInformation } from '@/services/supplier';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronsUpDown, Loader2Icon, Trash2, Trash2Icon } from 'lucide-react';
+import { ChevronsUpDown, Trash2Icon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -121,15 +121,15 @@ const PurchaseOrderAddPage = () => {
     },
   });
 
-  const handleAddItem = (itemId: number, itemCode: string) => {
+  const handleAddItem = (itemId: number, itemCode: string, itemCost: number) => {
     setPurchaseOrderItems((prev: any) => [
       ...prev,
       {
         itemId,
         itemCode,
         description: '',
-        unitPrice: '',
-        quantity: '',
+        unitPrice: itemCost,
+        quantity: 1,
       },
     ]);
   };
@@ -196,10 +196,9 @@ const PurchaseOrderAddPage = () => {
               name="poNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>PO Number</FormLabel>
+                  <FormLabel>Purchase Order Number</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter PO number"
                       {...field}
                       className={
                         form.formState.errors.poNumber ? 'border-red-500' : ''
@@ -224,11 +223,7 @@ const PurchaseOrderAddPage = () => {
                         role="combobox"
                         className={`justify-between ${form.formState.errors.supplierId ? 'border-red-500' : ''}`}
                       >
-                        {field.value && supplierList
-                          ? supplierList.find(
-                              (supplier) => supplier.id === field.value
-                            )?.fullName
-                          : 'Select Supplier'}
+                        {field.value && supplierList ? supplierList.find((supplier) => supplier.id === field.value)?.fullName : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -291,11 +286,7 @@ const PurchaseOrderAddPage = () => {
                     <Input
                       type="date"
                       {...field}
-                      className={
-                        form.formState.errors.requiredByDate
-                          ? 'border-red-500'
-                          : ''
-                      }
+                      className={form.formState.errors.requiredByDate ? 'border-red-500' : ''}
                     />
                   </FormControl>
                   <FormMessage />
@@ -311,13 +302,8 @@ const PurchaseOrderAddPage = () => {
                   <FormLabel>Payment Terms</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Net 30"
                       {...field}
-                      className={
-                        form.formState.errors.paymentTerm
-                          ? 'border-red-500'
-                          : ''
-                      }
+                      className={form.formState.errors.paymentTerm ? 'border-red-500' : ''}
                     />
                   </FormControl>
                   <FormMessage />
@@ -387,7 +373,7 @@ const PurchaseOrderAddPage = () => {
                               disabled={purchaseOrderItems?.some(
                                 (i) => i.itemId === item.id
                               )}
-                              onSelect={() => handleAddItem(item.id, item.code)}
+                              onSelect={() => handleAddItem(item.id, item.code, item.cost)}
                             >
                               {item.id} - {item.code} - {item.description}
                             </CommandItem>
@@ -407,19 +393,6 @@ const PurchaseOrderAddPage = () => {
                   key={item.itemId}
                   className="flex items-center justify-center gap-x-2 py-2"
                 >
-                  <Button
-                    type="button"
-                    className="translate-y-3"
-                    variant="destructive"
-                    onClick={() =>
-                      setPurchaseOrderItems((prev: any) =>
-                        prev.filter((v: any) => v.itemId !== item.itemId)
-                      )
-                    }
-                  >
-                    <Trash2Icon />
-                  </Button>
-
                   <div>
                     <Label>Item Code</Label>
                     <Input value={item.itemCode} disabled type="text" />
@@ -433,13 +406,7 @@ const PurchaseOrderAddPage = () => {
                       type="text"
                       id={`description-${item.itemId}`}
                       value={item.description}
-                      onChange={(e) =>
-                        handleItemFieldChange(
-                          item.itemId,
-                          'description',
-                          e.target.value
-                        )
-                      }
+                      onChange={(e) => handleItemFieldChange(item.itemId, 'description', e.target.value)}
                     />
                   </div>
 
@@ -448,14 +415,9 @@ const PurchaseOrderAddPage = () => {
                     <Input
                       id={`quantity-${item.id}`}
                       type="number"
+                      min={1}
                       value={item.quantity}
-                      onChange={(e) =>
-                        handleItemFieldChange(
-                          item.itemId,
-                          'quantity',
-                          e.target.value
-                        )
-                      }
+                      onChange={(e) => handleItemFieldChange(item.itemId, 'quantity', e.target.value)}
                     />
                   </div>
                   <div>
@@ -465,15 +427,17 @@ const PurchaseOrderAddPage = () => {
                       type="text"
                       value={item.unitPrice}
                       required
-                      onChange={(e) =>
-                        handleItemFieldChange(
-                          item.itemId,
-                          'unitPrice',
-                          e.target.value
-                        )
-                      }
+                      onChange={(e) => handleItemFieldChange(item.itemId, 'unitPrice', e.target.value)}
                     />
                   </div>
+
+                  <Button
+                    type="button"
+                    className="translate-y-3"
+                    variant="destructive"
+                    onClick={() => setPurchaseOrderItems((prev: any) => prev.filter((v: any) => v.itemId !== item.itemId))}>
+                    <Trash2Icon />
+                  </Button>
                 </div>
               ))}
             </div>
