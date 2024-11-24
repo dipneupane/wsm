@@ -10,7 +10,11 @@ import { getAllInventoryItems } from '@/services/inventory-item';
 import { createPickList } from '@/services/pick-list';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronsUpDown, Loader2Icon, Trash2Icon, PlusCircle } from 'lucide-react';
+import {
+  ChevronsUpDown,
+  Loader2Icon,
+  Trash2Icon,
+} from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -64,17 +68,16 @@ const PriorityLevel = {
   Completed: 3,
 } as const;
 
-// Create the Zod schema
 const pickListSchema = z.object({
   referenceNo: z.string().min(1, 'required'),
   customerId: z.number().int().positive('required'),
-  priorityId: z.number().int(),
   requiredDate: z.string().min(1, 'required'),
-  project: z.string().min(1, 'required'),
-  aptHouseNumber: z.string().min(1, 'required'),
-  doorType: z.string().min(1, 'required'),
-  ironMongeryFinish: z.string().min(1, 'required'),
-  frameFinish: z.string().min(1, 'required')
+  priorityId: z.number().int(),
+  project: z.any().optional(),
+  aptHouseNumber: z.any().optional(),
+  doorType: z.any().optional(),
+  ironMongeryFinish: z.any().optional(),
+  frameFinish: z.any().optional(),
 });
 
 export type pickListItems = {
@@ -133,7 +136,9 @@ const PickUpListRootPage = () => {
   });
 
   const [pickListItems, setPickListItems] = useState<pickListItems[]>([]);
-  const [additionalInformation, setAdditionalInformation] = useState<AdditionalInformations[]>([]);
+  const [additionalInformation, setAdditionalInformation] = useState<
+    AdditionalInformations[]
+  >([]);
 
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -151,13 +156,12 @@ const PickUpListRootPage = () => {
   });
 
   const handleItemFieldChange = (itemId: number, field: keyof Omit<pickListItems, 'categoryId' | 'itemId'>, value: string) => {
-    debugger;
-    setPickListItems((prevItems) => prevItems.map((item) => item.itemId === itemId ? { ...item, [field]: value } : item));
+    setPickListItems((prevItems) =>
+      prevItems.map((item) => item.itemId === itemId ? { ...item, [field]: value } : item));
   };
 
   const onSubmit = async (values: z.infer<typeof pickListSchema>) => {
     const validatedData = pickListSchema.parse(values);
-
     const pickListItemsWithoutCategory = pickListItems.map((p) => ({
       itemId: p.itemId,
       fireRating: p.fireRating,
@@ -166,10 +170,9 @@ const PickUpListRootPage = () => {
       order: p.order,
       date: p.date ?? new Date(Date.now()).toISOString(),
       notes: p.notes,
-      purchaseOrderId: p.purchaseOrderId
+      purchaseOrderId: p.purchaseOrderId,
     }));
 
-    debugger;
     const data = {
       ...validatedData,
       pickListItems: pickListItemsWithoutCategory,
@@ -177,19 +180,12 @@ const PickUpListRootPage = () => {
     };
 
     if (
-      pickListItems.some(
-        (item) =>
-          Number(item.order) >
-          (inventoryItemsList?.find((i) => i.id === item.itemId)?.stock ??
-            0) && !item.madeOrderOfTheItems
-      )
+      pickListItems.some((item) => Number(item.order) >
+        (inventoryItemsList?.find((i) => i.id === item.itemId)?.stock ?? 0) && !item.madeOrderOfTheItems)
     ) {
-      toast.error(
-        'Some items exceed available stock. Please create purchase orders for those items.'
-      );
+      toast.error('Some items exceed available stock. Please create purchase orders for those items.');
       return;
     }
-    console.log('data', data);
     mutation.mutateAsync(data);
   };
 
@@ -197,7 +193,7 @@ const PickUpListRootPage = () => {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <h2 className='mb-4 text-2xl font-bold'>Basic Informations</h2>
+          <h2 className="mb-4 text-2xl font-bold">Basic Informations</h2>
           <div className="grid grid-cols-3 gap-4">
             <FormField
               control={form.control}
@@ -209,7 +205,11 @@ const PickUpListRootPage = () => {
                     <Input
                       placeholder="Enter reference number"
                       {...field}
-                      className={form.formState.errors.referenceNo ? 'border-red-500' : ''}
+                      className={
+                        form.formState.errors.referenceNo
+                          ? 'border-red-500'
+                          : ''
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -227,7 +227,11 @@ const PickUpListRootPage = () => {
                     onValueChange={(value) => field.onChange(Number(value))}
                     value={field.value ? field.value.toString() : undefined}
                   >
-                    <SelectTrigger className={form.formState.errors.priorityId ? 'border-red-500' : ''}>
+                    <SelectTrigger
+                      className={
+                        form.formState.errors.priorityId ? 'border-red-500' : ''
+                      }
+                    >
                       <SelectValue placeholder="Select Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -251,7 +255,7 @@ const PickUpListRootPage = () => {
               control={form.control}
               name="customerId"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem className="flex flex-col mt-2">
                   <FormLabel>Customer *</FormLabel>
                   <Popover open={open} onOpenChange={setOpen}>
                     <PopoverTrigger asChild>
@@ -385,8 +389,10 @@ const PickUpListRootPage = () => {
             />
           </div>
 
-          <h2 className='mb-4 text-2xl font-bold'>Items Informations</h2>
-          {isCategotyLoading && (<Loader2Icon className="animate-spin text-primary" />)}
+          <h2 className="mb-4 text-2xl font-bold">Items Informations</h2>
+          {isCategotyLoading && (
+            <Loader2Icon className="animate-spin text-primary" />
+          )}
 
           {categoryData?.map((c, index) => (
             <div key={index} className="border-b">
@@ -397,11 +403,7 @@ const PickUpListRootPage = () => {
                 </h2>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="justify-between"
-                    >
+                    <Button variant="outline" role="combobox" className="justify-between">
                       Select items
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -412,33 +414,39 @@ const PickUpListRootPage = () => {
                       <CommandEmpty>No items found.</CommandEmpty>
                       <CommandGroup>
                         <ScrollArea className="h-64">
-                          {inventoryItemsList?.map((item) =>
-                            item.categoryId === c.key && (
-                              <>
-                                {
-                                  <CommandItem
-                                    disabled={pickListItems?.some((i) => i.itemId === item.id)}
-                                    onSelect={() =>
-                                      setPickListItems((prev) => [
-                                        ...prev,
-                                        {
-                                          itemId: item.id,
-                                          categoryId: c.key,
-                                          itemCode: item.description + '-' + item.code,
-                                          madeOrderOfTheItems: false,
-                                          supplierId: item.supplierId,
-                                          order: 1
-                                        },
-                                      ])
-                                    }
-                                    key={item.categoryId}
-                                  >
-                                    {item.categoryId}-{item.id} -{item.code} -{' '}
-                                    {item.description}
-                                  </CommandItem>
-                                }
-                              </>
-                            )
+                          {inventoryItemsList?.map(
+                            (item) =>
+                              item.categoryId === c.key && (
+                                <>
+                                  {
+                                    <CommandItem
+                                      disabled={pickListItems?.some(
+                                        (i) => i.itemId === item.id
+                                      )}
+                                      onSelect={() =>
+                                        setPickListItems((prev) => [
+                                          ...prev,
+                                          {
+                                            itemId: item.id,
+                                            categoryId: c.key,
+                                            itemCode: item.description + '-' + item.code,
+                                            madeOrderOfTheItems: false,
+                                            supplierId: item.supplierId,
+                                            order: 1,
+                                            fireRating: item.fireRating,
+                                            size: item.size,
+                                            finish: item.finish
+                                          },
+                                        ])
+                                      }
+                                      key={item.categoryId}
+                                    >
+                                      {item.categoryId}-{item.id} -{item.code} -{' '}
+                                      {item.description}
+                                    </CommandItem>
+                                  }
+                                </>
+                              )
                           )}
                         </ScrollArea>
                       </CommandGroup>
@@ -449,118 +457,177 @@ const PickUpListRootPage = () => {
 
               {pickListItems?.map((item) => {
                 const isOrderConfirmed = item.madeOrderOfTheItems;
-                const stock = (inventoryItemsList?.find((i) => i.id === item.itemId)?.stock ?? 0);
+                const stock = inventoryItemsList?.find((i) => i.id === item.itemId)?.stock ?? 0;
                 return (
-                  item.categoryId === c.key && (<div key={item.itemId} className={cn({
-                    'bg-green-300': (Number(item.order) <= (stock) || isOrderConfirmed),
-                    'bg-red-300': Number(item.order) <= 0 || Number(item.order) > (stock) && !isOrderConfirmed,
-                    'flex items-center justify-center gap-x-2 py-2 border-b-2 border-white': true,
-                  })}>
-
-                    <div className="grid grid-cols-9 gap-4 px-5 rounded">
-                      <div className="w-3/9">
-                        <Label>Item Code</Label>
-                        <Input value={item.itemCode} disabled type="text" />
-                      </div>
-
-                      <div className="w-1/9">
-                        <Label>Fire Rating</Label>
-                        <Input
-                          type="text"
-                          value={item.fireRating || ''}
-                          onChange={(e) => handleItemFieldChange(item.itemId, 'fireRating', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="w-1/9">
-                        <Label>Size</Label>
-                        <Input
-                          type="text"
-                          value={item.size || ''}
-                          onChange={(e) => handleItemFieldChange(item.itemId, 'size', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="w-1/9">
-                        <Label>Finish</Label>
-                        <Input
-                          type="text"
-                          value={item.finish || ''} onChange={(e) => handleItemFieldChange(item.itemId, 'finish', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="w-1/9">
-                        <Label className="">
-                          Order
-                          <span className='mt-2 ml-2 text-xs'>
-                            (Stock: {inventoryItemsList?.find((i) => i.id === item.itemId)?.stock})
-                          </span>
-                        </Label>
-
-                        <Input
-                          type="number"
-                          min={1}
-                          value={item.order || ''}
-                          onChange={(e) => handleItemFieldChange(item.itemId, 'order', e.target.value)}
-                        />
-                        <div className='mt-2 ml-2 text-xs'>
-                          {pickListItems?.find((i) => i.itemId === item.itemId)?.madeOrderOfTheItems && item.order > 0 &&
-                            (<span className="text-xs">{item.order} P.O Confirmed</span>)}
+                  item.categoryId === c.key && (
+                    <div
+                      key={item.itemId}
+                      className={cn({
+                        'bg-green-300/30': Number(item.order) <= stock || isOrderConfirmed,
+                        'bg-red-300/30': Number(item.order) <= 0 || (Number(item.order) > stock && !isOrderConfirmed),
+                        'flex items-center justify-center gap-x-2 border-b-2 border-white py-2': true,
+                      })}
+                    >
+                      <div className="grid grid-cols-12 gap-4 rounded px-5">
+                        <div className="col-span-4">
+                          <Label>Item Code</Label>
+                          <Input value={item.itemCode} disabled type="text" />
                         </div>
-                      </div>
 
-                      <div className="w-1/9">
-                        <Label>Date</Label>
-                        <Input
-                          type="date"
-                          value={item.date || ''}
-                          onChange={(e) => handleItemFieldChange(item.itemId, 'date', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="w-1/9">
-                        <Label>Notes</Label>
-                        <Input
-                          type="text"
-                          value={item.notes || ''}
-                          onChange={(e) => handleItemFieldChange(item.itemId, 'notes', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="w-1/9 grid grid-cols-2 gap-2 content-start d-flex">
-                        {pickListItems &&
-                          <PurchaseDialog
-                            //@ts-ignore
-                            pickList={pickListItems}
-                            //@ts-ignore
-                            onPurchaseOrderConfirmationCallback={setPickListItems}
-                            //@ts-ignore
-                            value={pickListItems.find((i) => i.itemId === item.itemId)}
+                        <div className="col-span-1">
+                          <Label>Fire Rating</Label>
+                          <Input
+                            type="text"
+                            value={item.fireRating || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'fireRating',
+                                e.target.value
+                              )
+                            }
                           />
-                        }
+                        </div>
+                        <div className="">
+                          <Label>Size</Label>
+                          <Input
+                            type="text"
+                            value={item.size || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'size',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                        <Button
-                          className="translate-y-3 mt-3"
-                          variant="destructive"
-                          onClick={() => setPickListItems((prev) => prev.filter((v) => v.itemId !== item.itemId))}
-                        >
-                          <Trash2Icon />
-                        </Button>
+                        <div className="">
+                          <Label>Finish</Label>
+                          <Input
+                            type="text"
+                            value={item.finish || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'finish',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                        <div className="hidden">
-                          <Label>Id</Label>
-                          <Input value={item.itemId} disabled type="text" />
+                        <div className="">
+                          <Label className="">
+                            Order
+                            <span className="mt-2 text-nowrap text-xs">
+                              (Stock:{' '}
+                              {
+                                inventoryItemsList?.find(
+                                  (i) => i.id === item.itemId
+                                )?.stock
+                              }
+                              )
+                            </span>
+                          </Label>
+
+                          <Input
+                            type="number"
+                            min={1}
+                            value={item.order || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'order',
+                                e.target.value
+                              )
+                            }
+                          />
+                          <div className="col-span-1 ml-2 mt-2 text-nowrap text-xs">
+                            {pickListItems?.find(
+                              (i) => i.itemId === item.itemId
+                            )?.madeOrderOfTheItems &&
+                              item.order > 0 && (
+                                <span className="text-xs">
+                                  {item.order} P.O Confirmed
+                                </span>
+                              )}
+                          </div>
+                        </div>
+
+                        <div className="col-span-2">
+                          <Label>Date</Label>
+                          <Input
+                            type="date"
+                            value={item.date || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'date',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="col-span-1">
+                          <Label>Notes</Label>
+                          <Input
+                            type="text"
+                            value={item.notes || ''}
+                            onChange={(e) =>
+                              handleItemFieldChange(
+                                item.itemId,
+                                'notes',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="d-flex grid grid-cols-2 content-start gap-2">
+                          {pickListItems && (
+                            <PurchaseDialog
+                              //@ts-ignore
+                              pickList={pickListItems}
+                              //@ts-ignore
+                              onPurchaseOrderConfirmationCallback={
+                                setPickListItems
+                              }
+                              //@ts-ignore
+                              value={pickListItems.find(
+                                (i) => i.itemId === item.itemId
+                              )}
+                            />
+                          )}
+
+                          <Button
+                            className="mt-3 translate-y-3"
+                            variant="destructive"
+                            onClick={() =>
+                              setPickListItems((prev) =>
+                                prev.filter((v) => v.itemId !== item.itemId)
+                              )
+                            }
+                          >
+                            <Trash2Icon />
+                          </Button>
+
+                          <div className="hidden">
+                            <Label>Id</Label>
+                            <Input value={item.itemId} disabled type="text" />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  ))
+                  )
+                );
               })}
             </div>
           ))}
 
-
-          <h2 className='mb-4 text-2xl font-bold'>Additional Informations</h2>
+          <h2 className="mb-4 text-2xl font-bold">Additional Informations</h2>
           <div className="flex flex-col">
             {additionalInformation.map((info, index) => (
               <div className="flex items-center">
@@ -570,7 +637,13 @@ const PickUpListRootPage = () => {
                     key={index}
                     value={info.fireRating}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, fireRating: e.target.value } : i));
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index
+                            ? { ...i, fireRating: e.target.value }
+                            : i
+                        )
+                      );
                     }}
                   />
                 </div>
@@ -580,7 +653,11 @@ const PickUpListRootPage = () => {
                     key={index}
                     value={info.handling}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, handling: e.target.value } : i));
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index ? { ...i, handling: e.target.value } : i
+                        )
+                      );
                     }}
                   />
                 </div>
@@ -590,7 +667,11 @@ const PickUpListRootPage = () => {
                     key={index}
                     value={info.lockType}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, lockType: e.target.value } : i));
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index ? { ...i, lockType: e.target.value } : i
+                        )
+                      );
                     }}
                   />
                 </div>
@@ -600,7 +681,10 @@ const PickUpListRootPage = () => {
                     key={index}
                     value={info.underCut}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, underCut: e.target.value } : i)
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index ? { ...i, underCut: e.target.value } : i
+                        )
                       );
                     }}
                   />
@@ -611,7 +695,12 @@ const PickUpListRootPage = () => {
                     key={index}
                     value={info.wallThickNess}
                     onChange={(e) => {
-                      setAdditionalInformation((prev) => prev.map((i, idx) => idx === index ? { ...i, wallThickNess: e.target.value } : i)
+                      setAdditionalInformation((prev) =>
+                        prev.map((i, idx) =>
+                          idx === index
+                            ? { ...i, wallThickNess: e.target.value }
+                            : i
+                        )
                       );
                     }}
                   />
@@ -621,7 +710,12 @@ const PickUpListRootPage = () => {
                   <Button
                     className="translate-y-3"
                     variant="destructive"
-                    onClick={() => setAdditionalInformation((prev) => prev.filter((_, idx) => idx !== index))}>
+                    onClick={() =>
+                      setAdditionalInformation((prev) =>
+                        prev.filter((_, idx) => idx !== index)
+                      )
+                    }
+                  >
                     <Trash2Icon />
                   </Button>
                 </div>
@@ -630,17 +724,18 @@ const PickUpListRootPage = () => {
           </div>
 
           <div
-            className="w-fit cursor-pointer rounded-sm bg-primary p-2 text-black mt-5"
+            className="mt-5 w-fit cursor-pointer rounded-sm bg-primary p-2 text-black"
             onClick={(e) => {
-              setAdditionalInformation((prev) => [...prev,
-              {
-                fireRating: '',
-                handling: '',
-                lockType: '',
-                note: '',
-                underCut: '',
-                wallThickNess: '',
-              },
+              setAdditionalInformation((prev) => [
+                ...prev,
+                {
+                  fireRating: '',
+                  handling: '',
+                  lockType: '',
+                  note: '',
+                  underCut: '',
+                  wallThickNess: '',
+                },
               ]);
             }}
           >

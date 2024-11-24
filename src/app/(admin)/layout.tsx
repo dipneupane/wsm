@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import { navigationSiteMap } from '@/config/routes';
+import { adminNavigationSiteMap } from '@/config/routes';
 
 import { auth } from '@/lib/auth';
 
@@ -19,7 +19,7 @@ export default async function Layout({
   }
   return (
     <SidebarProvider>
-      <DashBoardLayout rootPath={navigationSiteMap.admin}>
+      <DashBoardLayout navItems={adminNavigationSiteMap}>
         {children}
       </DashBoardLayout>
     </SidebarProvider>

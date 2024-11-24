@@ -3,7 +3,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDownIcon } from 'lucide-react';
 
-import { InventoryItemsGetAllType } from '@/types/inventory-items';
 import { PurchaseOrderGetAllType } from '@/types/purchase-order';
 
 import { Badge } from '@/components/ui/badge';
@@ -38,13 +37,17 @@ export const columns: ColumnDef<PurchaseOrderGetAllType>[] = [
     header: ({ column }) => {
       return (
         <Button
-          variant="ghost"
+          variant={'outline'}
+          className="flex cursor-pointer items-center gap-x-2 border-none"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Item Count
           <ArrowUpDownIcon />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      return <p className="mx-auto w-1/2">{row.original.itemsCount}</p>;
     },
   },
   {
@@ -69,11 +72,13 @@ export const columns: ColumnDef<PurchaseOrderGetAllType>[] = [
       const getStatusBadge = (status: string) => {
         switch (status) {
           case 'Draft':
-            return <Badge className="bg-orange-400">Draft</Badge>;
+            return <Badge className="translate-x-6 bg-orange-400">Draft</Badge>;
           case 'Ordered':
-            return <Badge className="bg-blue-400">Ordered</Badge>;
+            return <Badge className="translate-x-6 bg-blue-400">Ordered</Badge>;
           case 'Received':
-            return <Badge className="bg-green-400">Received</Badge>;
+            return (
+              <Badge className="translate-x-6 bg-green-400">Received</Badge>
+            );
         }
       };
       return getStatusBadge(status);

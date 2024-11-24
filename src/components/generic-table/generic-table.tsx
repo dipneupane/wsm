@@ -60,28 +60,27 @@ export default function GenericTable<T>({
     },
     initialState: {
       pagination: {
-        pageSize: 50
-      }
-    }
+        pageSize: 50,
+      },
+    },
   });
 
   return (
     <div className="mx-auto flex w-full flex-col space-y-4">
-
       {filterUI}
 
-      <Table className="rounded-2xl border border-slate-400/60 dark:border-slate-400/20">
-        <TableHeader>
+      <Table className="justify-center rounded-2xl border border-slate-400/60 dark:border-slate-400/20">
+        <TableHeader className="">
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <TableRow className="" key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead className="" key={header.id}>
                   {header.isPlaceholder
                     ? null
                     : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                 </TableHead>
               ))}
             </TableRow>
@@ -96,8 +95,11 @@ export default function GenericTable<T>({
                   key={row.id}
                 >
                   {row.getVisibleCells().map((cell: any) => (
-                    <TableCell className='text-left' key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <TableCell className="w-fit text-start" key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>

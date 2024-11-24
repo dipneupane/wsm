@@ -1,11 +1,15 @@
 interface BaseInventoryItem {
   code: string;
+  fireRating: string;
+  size: string;
+  finish: string;
   description: string;
   categoryId: number;
   supplierId: number;
   cost: number;
   stock: number;
-  minStockQuantity: number;
+  totalStockValue: number;
+  safetyStockRequired: number;
   reorderLevel: number;
 }
 

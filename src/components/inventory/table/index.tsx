@@ -113,7 +113,7 @@ function DataTable<T>({
             table.getRowModel().rows.map((row) => {
               return (
                 <TableRow
-                  className={`border-black dark:border-white ${row.original.stock <= row.original.minStockQuantity ? 'bg-red-300/60 hover:bg-red-300/30 dark:bg-red-600' : ''} `}
+                  className={`border-black dark:border-white ${row.original.stock <= row.original.safetyStockRequired ? 'bg-red-300/60 hover:bg-red-300/30 dark:bg-red-600' : ''} `}
                   key={row.id}>
                   {row.getVisibleCells().map((cell: any) => {
                     const cellValue = cell.getValue();

@@ -2,6 +2,7 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDownIcon } from 'lucide-react';
+
 import { PickListGetAllType } from '@/types/pick-list';
 
 import { Badge } from '@/components/ui/badge';
@@ -31,10 +32,23 @@ export const columns: ColumnDef<PickListGetAllType>[] = [
         </Button>
       );
     },
+    cell: ({ row }) => {
+      return <p className="mx-auto w-1/2">{row.original.itemsCount}</p>;
+    },
   },
   {
     accessorKey: 'createdDate',
-    header: 'Created Date',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Created Date
+          <ArrowUpDownIcon />
+        </Button>
+      );
+    },
     cell: ({ row }) => {
       const date = new Date(row.original.createdDate);
       const formattedDate = date.toLocaleDateString('en-US', {

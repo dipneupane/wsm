@@ -9,23 +9,18 @@ import {
 
 import { apiClientWithClientHeader } from '@/lib/axios-config';
 
-interface filterProps
-  {
-    "filterText": string,
-    "filterParams": any[]
-  }
+interface filterProps {
+  "filterText": string,
+  "filterParams": any[]
+}
 
-export const getAllInventoryItems = async (filter:filterProps = {
+export const getAllInventoryItems = async (filter: filterProps = {
   "filterText": "",
   "filterParams": []
-}): Promise<
-  InventoryItemsGetAllType[] | undefined
-> => {
+}): Promise<InventoryItemsGetAllType[] | undefined> => {
   try {
     const { data } =
-      await apiClientWithClientHeader.post<
-        ApiResponse<InventoryItemsGetAllType[]>
-      >('/Item/GetAll', filter);
+      await apiClientWithClientHeader.post<ApiResponse<InventoryItemsGetAllType[]>>('/Item/GetAll', filter);
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');
     }
@@ -34,14 +29,9 @@ export const getAllInventoryItems = async (filter:filterProps = {
     throw error;
   }
 };
-export const createInventoryItem = async (
-  createItemdata: InventoryItemCreateType
-): Promise<any> => {
+export const createInventoryItem = async (createItemdata: InventoryItemCreateType): Promise<any> => {
   try {
-    const { data } = await apiClientWithClientHeader.post<ApiResponse<any>>(
-      '/Item/Create',
-      createItemdata
-    );
+    const { data } = await apiClientWithClientHeader.post<ApiResponse<any>>('/Item/Create', createItemdata);
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');
     }
@@ -54,10 +44,7 @@ export const editInventoryItem = async (
   createItemdata: InventoryItemUpdateType
 ) => {
   try {
-    const { data } = await apiClientWithClientHeader.put<ApiResponse<any>>(
-      '/Item/Update',
-      createItemdata
-    );
+    const { data } = await apiClientWithClientHeader.put<ApiResponse<any>>('/Item/Update', createItemdata);
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');
     }

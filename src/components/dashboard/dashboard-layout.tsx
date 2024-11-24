@@ -6,12 +6,12 @@ import AppSidebar from '../sidebar/app-sidebar';
 
 const DashBoardLayout = ({
   children,
-  rootPath,
+  navItems,
 }: {
   children: React.ReactNode;
-  rootPath: RootPath;
+  navItems: any;
 }) => {
-  return <AppSidebar rootPath={rootPath}>{children}</AppSidebar>;
+  return <AppSidebar navItems={navItems}>{children}</AppSidebar>;
 };
 
 export default DashBoardLayout;

@@ -59,7 +59,7 @@ export default function ActionCellComponent({ row }: ICellComponentProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuItem>
+        {/* <DropdownMenuItem>
           <Link
             href=""
             className="w-full"
@@ -67,7 +67,7 @@ export default function ActionCellComponent({ row }: ICellComponentProps) {
           >
             Download
           </Link>
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuItem>
           <Link className="w-full" href={`/purchaseorder/${row.original.id}`}>
             View

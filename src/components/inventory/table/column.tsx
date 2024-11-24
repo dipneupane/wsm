@@ -55,14 +55,14 @@ export const columns: ColumnDef<InventoryItemsGetAllType>[] = [
     },
   },
   {
-    accessorKey: 'minStockQuantity',
+    accessorKey: 'safetyStockRequired',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Min. Stock Quantity
+          Safety Stock Required
           <ArrowUpDown />
         </Button>
       );

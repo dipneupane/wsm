@@ -56,11 +56,11 @@ export default function ActionCellComponent({ row }: ICellComponentProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuItem>
+        {/* <DropdownMenuItem>
           <Link href={"#"} className="w-full" onClick={() => generatePDF(row.original.id)}>
             Download
           </Link>
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuItem>
           <Link className="w-full" href={`/picklist/${row.original.id}`}>
             View

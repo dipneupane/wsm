@@ -31,7 +31,7 @@ const InventoryRootPage = () => {
   const [supplierId, setSupplierId] = useState<number[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching, isPending } = useQuery({
     queryKey: [INVENTORY_QUERY_KEY],
     queryFn: () =>
       getAllInventoryItems({
@@ -87,14 +87,13 @@ const InventoryRootPage = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isPending || isFetching) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-
   const filterUI = (
     <div className="mb-4 flex flex-wrap gap-4 lg:flex-nowrap">
       <Input
@@ -161,7 +160,11 @@ const InventoryRootPage = () => {
           </Button>
         </Link>
       </div>
-      <InventoryItemsTable data={data} filterUI={filterUI} />
+      {isLoading ? (
+        <Loader2Icon />
+      ) : (
+        <InventoryItemsTable data={data} filterUI={filterUI} />
+      )}
     </DashboardShell>
   );
 };

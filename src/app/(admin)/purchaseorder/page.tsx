@@ -41,7 +41,7 @@ export default function Component() {
       value: 3,
     },
   ];
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isPending, isFetching } = useQuery({
     queryKey: [PURCHASEORDER_QUERY_KEY],
     queryFn: () =>
       getAllPurchaseOrderInformation({
@@ -84,7 +84,7 @@ export default function Component() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isPending || isFetching) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2Icon className="h-8 w-8 animate-spin text-primary" />

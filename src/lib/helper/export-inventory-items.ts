@@ -117,7 +117,6 @@ export const handleInventoryItemExport = async (
   inventoryItems: InventoryItemsGetAllType[]
 ): Promise<void> => {
   try {
-    console.log('Exporting inventory items:', inventoryItems);
     exportInventoryToExcel(inventoryItems);
   } catch (error) {
     console.error('Export failed:', error);

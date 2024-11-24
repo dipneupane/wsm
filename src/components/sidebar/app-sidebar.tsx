@@ -4,7 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { RootPath } from '@/types';
+import { ChevronRight } from 'lucide-react';
+
+import { SideBarSiteMap } from '@/config/routes';
 
 import { Separator } from '@/components/ui/separator';
 import {
@@ -18,6 +20,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
@@ -25,18 +30,22 @@ import {
 
 import { DoorSetsLogo } from '../../../public/images';
 import { Icons } from '../icons/icon';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '../ui/collapsible';
 import { BreadCrumbsTrail } from './beardcrumb-trail';
 import UserProfileBox from './user-profile-box';
 
 export default function AppSidebar({
   children,
-  rootPath,
+  navItems,
 }: {
   children: React.ReactNode;
-  rootPath: RootPath;
+  navItems: SideBarSiteMap[];
 }) {
   const pathname = usePathname();
-
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
@@ -61,24 +70,50 @@ export default function AppSidebar({
           <SidebarGroup>
             <SidebarGroupLabel> Admin Pannel</SidebarGroupLabel>
             <SidebarMenu>
-              {Object.keys(rootPath.subPaths).map((key) => {
-                const subPath = rootPath.subPaths[key].icon;
-                const Icon =
-                  Icons[subPath as keyof typeof Icons] || Icons['chevronRight'];
-
-                return (
-                  rootPath.subPaths[key].visible && (
+              {navItems.map((route) => {
+                const Icon = Icons[route.icon];
+                return route.visible && !route.subPath ? (
+                  <SidebarMenuItem key={route.name}>
                     <Link
-                      key={key}
-                      className={`flex items-center gap-x-2 ${(rootPath.subPaths[key].path === '/' ? pathname === '/' : pathname.startsWith(rootPath.subPaths[key].path)) ? 'text-primary' : ''}`}
-                      href={rootPath.subPaths[key].path}
+                      className={`${pathname.startsWith(route.path) ? 'text-primary' : ''}`}
+                      href={route.path}
                     >
-                      <SidebarMenuButton key={key} tooltip={key}>
+                      <SidebarMenuButton>
                         <Icon className="h-5 w-5" />
-                        <span className="capitalize">{key}</span>
+                        <span>{route.name}</span>
                       </SidebarMenuButton>
                     </Link>
-                  )
+                  </SidebarMenuItem>
+                ) : (
+                  <Collapsible key={route.name} className="group/collapsible">
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          className={`${pathname.startsWith(route.path) ? 'text-primary' : ''}`}
+                        >
+                          <Link href={route.path}>
+                            <Icon className="h-5 w-5" />
+                          </Link>
+                          <span>{route.name}</span>
+                          <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {route.subPath?.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.name}>
+                              <SidebarMenuSubButton
+                                className={`${pathname.startsWith(subItem.path) ? 'text-primary' : ''}`}
+                                asChild
+                              >
+                                <Link href={subItem.path}>{subItem.name}</Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
                 );
               })}
             </SidebarMenu>
