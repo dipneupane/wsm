@@ -105,11 +105,6 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
   });
 
-  const { data: purchaseOrderNumber } = useQuery({
-    queryKey: PURCHASEORDER_QUERY_KEY,
-    queryFn: getPurchaseOrderNumber,
-  });
-
   // Update mutation
   const mutation = useMutation({
     mutationFn: updatePurchaseOrder,
@@ -157,6 +152,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
         paymentTerm: purchaseOrderData.paymentTerm,
         statusId: purchaseOrderData.statusId,
       });
+      //@ts-ignore
       setPurchaseOrderItems(purchaseOrderData.purchaseOrderItems || []);
     }
   }, [purchaseOrderData, form]);
@@ -249,7 +245,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
             <FormItem>
               <FormLabel>PO Number</FormLabel>
               <FormControl>
-                <Input value={purchaseOrderNumber} disabled />
+                <Input value={purchaseOrderData?.poNumber!} disabled />
               </FormControl>
               <FormMessage />
             </FormItem>

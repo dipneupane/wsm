@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -114,6 +114,10 @@ const PurchaseOrderAddPage = () => {
       statusId: 1,
     },
   });
+
+  useEffect(() => {
+    form.setValue('poNumber', purchaseOrderNumber);
+  }, [purchaseOrderNumber]);
 
   const queryClient = useQueryClient();
   const router = useRouter();

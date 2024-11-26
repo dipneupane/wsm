@@ -61,7 +61,9 @@ export const createPurchaseOrder = async (data: PurchaseOrderCreateType) => {
   }
 };
 
-export const getPurchaseOrderById = async (id: number): Promise<any> => {
+export const getPurchaseOrderById = async (
+  id: number
+): Promise<PurchaseOrderGetByIdType> => {
   try {
     const { data } = await apiClientWithClientHeader.get<
       ApiResponse<PurchaseOrderGetByIdType>
