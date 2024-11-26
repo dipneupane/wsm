@@ -680,7 +680,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                           )}
 
                           <Button
-                            className="mt-3 translate-y-3"
+                            className="mt-3 translate-x-3 translate-y-3"
                             variant="destructive"
                             onClick={() =>
                               setPickListItems((prev) =>

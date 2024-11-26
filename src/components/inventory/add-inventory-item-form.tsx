@@ -180,7 +180,7 @@ export default function AddInventoryItemForm({ }: {}) {
                 <FormItem>
                   <FormLabel>Cost</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} />
+                    <Input type="number" {...field} defaultValue={0} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -196,7 +196,7 @@ export default function AddInventoryItemForm({ }: {}) {
                 <FormItem>
                   <FormLabel>Stock</FormLabel>
                   <FormControl>
-                    <Input placeholder="" type="number" {...field} />
+                    <Input placeholder="" type="number" defaultValue={0} {...field} />
                   </FormControl>
 
                   <FormMessage />
@@ -216,7 +216,7 @@ export default function AddInventoryItemForm({ }: {}) {
                 <FormItem>
                   <FormLabel>Total Stock Value</FormLabel>
                   <FormControl>
-                    <Input placeholder="" type="number" {...field} />
+                    <Input placeholder="" type="number" defaultValue={0} {...field} />
                   </FormControl>
 
                   <FormMessage />
@@ -233,7 +233,7 @@ export default function AddInventoryItemForm({ }: {}) {
                 <FormItem>
                   <FormLabel>Safety Stock Required</FormLabel>
                   <FormControl>
-                    <Input placeholder="" type="number" {...field} />
+                    <Input placeholder="" type="number" defaultValue={0} {...field} />
                   </FormControl>
 
                   <FormMessage />
@@ -250,7 +250,7 @@ export default function AddInventoryItemForm({ }: {}) {
                 <FormItem>
                   <FormLabel>Reorder Level</FormLabel>
                   <FormControl>
-                    <Input placeholder="" type="number" {...field} />
+                    <Input placeholder="" type="number" defaultValue={0} {...field} />
                   </FormControl>
 
                   <FormMessage />

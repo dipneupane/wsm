@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   createPurchaseOrder,
   getPurchaseOrderBySupplierID,
+  getPurchaseOrderNumber,
 } from '@/services/purchase-order';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -171,10 +172,7 @@ export function PurchaseDialog({
   );
 }
 
-const PurchaseOrderForm = ({
-  supplierId,
-  onCreateSuccess,
-}: {
+const PurchaseOrderForm = ({ supplierId, onCreateSuccess }: {
   supplierId: number;
   onCreateSuccess: () => void;
 }) => {
@@ -201,6 +199,11 @@ const PurchaseOrderForm = ({
     },
   });
 
+  const { data: purchaseOrderNumber } = useQuery({
+    queryKey: PURCHASEORDER_QUERY_KEY,
+    queryFn: getPurchaseOrderNumber,
+  });
+
   const form = useForm<z.infer<typeof purchaseOrderSchema>>({
     resolver: zodResolver(purchaseOrderSchema),
     defaultValues: {
@@ -212,6 +215,10 @@ const PurchaseOrderForm = ({
       statusId: 1,
     },
   });
+
+  useEffect(() => {
+    form.setValue('poNumber', purchaseOrderNumber);
+  }, [purchaseOrderNumber]);
 
   const onSubmit = (data: z.infer<typeof purchaseOrderSchema>) => {
     const payloadData = {
@@ -237,7 +244,7 @@ const PurchaseOrderForm = ({
               <FormItem>
                 <FormLabel>PO Number</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} disabled />
                 </FormControl>
                 <FormMessage />
               </FormItem>

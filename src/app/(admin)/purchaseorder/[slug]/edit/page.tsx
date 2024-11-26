@@ -160,14 +160,15 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
   const handleAddItem = (
     itemId: number,
     itemCode: string,
-    itemCost: number
+    itemCost: number,
+    description: string,
   ) => {
     setPurchaseOrderItems((prev: any) => [
       ...prev,
       {
         itemId,
         itemCode: itemCode,
-        description: '',
+        description,
         unitPrice: itemCost,
         quantity: 1,
       },
@@ -265,8 +266,8 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       >
                         {field.value && supplierList
                           ? supplierList.find(
-                              (supplier: any) => supplier.id === field.value
-                            )?.fullName
+                            (supplier: any) => supplier.id === field.value
+                          )?.fullName
                           : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -427,7 +428,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                                 (i) => i.itemId === item.id
                               )}
                               onSelect={() =>
-                                handleAddItem(item.id, item.code, item.cost)
+                                handleAddItem(item.id, item.code, item.cost, item.description)
                               }
                             >
                               {item.id} - {item.code} - {item.description}
