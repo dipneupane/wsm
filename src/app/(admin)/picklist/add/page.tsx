@@ -10,11 +10,7 @@ import { getAllInventoryItems } from '@/services/inventory-item';
 import { createPickList } from '@/services/pick-list';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ChevronsUpDown,
-  Loader2Icon,
-  Trash2Icon,
-} from 'lucide-react';
+import { ChevronsUpDown, Loader2Icon, Trash2Icon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -59,6 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 import { PurchaseDialog } from './purchaseDialog';
 
@@ -126,10 +123,11 @@ const PickUpListRootPage = () => {
     queryFn: getAllCategories,
   });
 
-  const { data: inventoryItemsList } = useQuery({
-    queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
-    queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
-  });
+  const { data: inventoryItemsList, isLoading: isInventoryListLoading } =
+    useQuery({
+      queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
+      queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
+    });
 
   const { data: customerList } = useQuery({
     queryKey: CUSTOMER_QUERY_KEY,
@@ -156,9 +154,16 @@ const PickUpListRootPage = () => {
     },
   });
 
-  const handleItemFieldChange = (itemId: number, field: keyof Omit<pickListItems, 'categoryId' | 'itemId'>, value: string) => {
+  const handleItemFieldChange = (
+    itemId: number,
+    field: keyof Omit<pickListItems, 'categoryId' | 'itemId'>,
+    value: string
+  ) => {
     setPickListItems((prevItems) =>
-      prevItems.map((item) => item.itemId === itemId ? { ...item, [field]: value } : item));
+      prevItems.map((item) =>
+        item.itemId === itemId ? { ...item, [field]: value } : item
+      )
+    );
   };
 
   const onSubmit = async (values: z.infer<typeof pickListSchema>) => {
@@ -181,10 +186,16 @@ const PickUpListRootPage = () => {
     };
 
     if (
-      pickListItems.some((item) => Number(item.order) >
-        (inventoryItemsList?.find((i) => i.id === item.itemId)?.stock ?? 0) && !item.madeOrderOfTheItems)
+      pickListItems.some(
+        (item) =>
+          Number(item.order) >
+            (inventoryItemsList?.find((i) => i.id === item.itemId)?.stock ??
+              0) && !item.madeOrderOfTheItems
+      )
     ) {
-      toast.error('Some items exceed available stock. Please create purchase orders for those items.');
+      toast.error(
+        'Some items exceed available stock. Please create purchase orders for those items.'
+      );
       return;
     }
     mutation.mutateAsync(data);
@@ -256,7 +267,7 @@ const PickUpListRootPage = () => {
               control={form.control}
               name="customerId"
               render={({ field }) => (
-                <FormItem className="flex flex-col mt-2">
+                <FormItem className="mt-2 flex flex-col">
                   <FormLabel>Customer *</FormLabel>
                   <Popover open={open} onOpenChange={setOpen}>
                     <PopoverTrigger asChild>
@@ -267,8 +278,8 @@ const PickUpListRootPage = () => {
                       >
                         {field.value && customerList
                           ? customerList.find(
-                            (customer) => customer.id === field.value
-                          )?.fullName
+                              (customer) => customer.id === field.value
+                            )?.fullName
                           : 'Select Customer'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -404,7 +415,11 @@ const PickUpListRootPage = () => {
                 </h2>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" className="justify-between">
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="justify-between"
+                    >
                       Select items
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -415,6 +430,9 @@ const PickUpListRootPage = () => {
                       <CommandEmpty>No items found.</CommandEmpty>
                       <CommandGroup>
                         <ScrollArea className="h-64">
+                          {isInventoryListLoading && (
+                            <Loader2Icon className="animate-spin" />
+                          )}
                           {inventoryItemsList?.map(
                             (item) =>
                               item.categoryId === c.key && (
@@ -430,14 +448,17 @@ const PickUpListRootPage = () => {
                                           {
                                             itemId: item.id,
                                             categoryId: c.key,
-                                            itemCode: item.description + '-' + item.code,
+                                            itemCode:
+                                              item.description +
+                                              '-' +
+                                              item.code,
                                             madeOrderOfTheItems: false,
                                             supplierId: item.supplierId,
                                             order: 1,
                                             fireRating: item.fireRating,
                                             size: item.size,
                                             finish: item.finish,
-                                            orderedCount: item.orderedCount
+                                            orderedCount: item.orderedCount,
                                           },
                                         ])
                                       }
@@ -459,27 +480,33 @@ const PickUpListRootPage = () => {
 
               {pickListItems?.map((item) => {
                 const isOrderConfirmed = item.madeOrderOfTheItems;
-                const stock = inventoryItemsList?.find((i) => i.id === item.itemId)?.stock ?? 0;
+                const stock =
+                  inventoryItemsList?.find((i) => i.id === item.itemId)
+                    ?.stock ?? 0;
                 return (
                   item.categoryId === c.key && (
                     <div
                       key={item.itemId}
                       className={cn({
-                        'bg-green-300/30': Number(item.order) <= stock || isOrderConfirmed,
-                        'bg-red-300/30': Number(item.order) <= 0 || (Number(item.order) > stock && !isOrderConfirmed),
-                        'flex items-center justify-center gap-x-2 border-b-2 border-white py-2': true,
+                        'bg-green-300/30':
+                          Number(item.order) <= stock || isOrderConfirmed,
+                        'bg-red-300/30':
+                          Number(item.order) <= 0 ||
+                          (Number(item.order) > stock && !isOrderConfirmed),
+                        'flex items-center justify-center gap-x-2 border-b-2 border-white py-2':
+                          true,
                       })}
                     >
                       <div className="grid grid-cols-12 gap-4 rounded px-5">
-                        <div className="col-span-4">
+                        <div className="col-span-3">
                           <Label>Item Code</Label>
-                          <Input value={item.itemCode} disabled type="text" />
+                          <Textarea rows={3} value={item.itemCode} disabled />
                         </div>
 
                         <div className="col-span-1">
                           <Label>Fire Rating</Label>
-                          <Input
-                            type="text"
+                          <Textarea
+                            rows={3}
                             value={item.fireRating || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -492,8 +519,8 @@ const PickUpListRootPage = () => {
                         </div>
                         <div className="">
                           <Label>Size</Label>
-                          <Input
-                            type="text"
+                          <Textarea
+                            rows={3}
                             value={item.size || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -507,8 +534,8 @@ const PickUpListRootPage = () => {
 
                         <div className="">
                           <Label>Finish</Label>
-                          <Input
-                            type="text"
+                          <Textarea
+                            rows={3}
                             value={item.finish || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -546,7 +573,7 @@ const PickUpListRootPage = () => {
                               )
                             }
                           />
-                          <div className="col-span-1 ml-2 mt-2 text-nowrap text-xs">
+                          <div className="col-span-1 ml-2 mt-2 text-nowrap text-[10px]">
                             {pickListItems?.find(
                               (i) => i.itemId === item.itemId
                             )?.madeOrderOfTheItems &&
@@ -560,10 +587,14 @@ const PickUpListRootPage = () => {
 
                         <div className="">
                           <Label>On Order</Label>
-                          <Input type="text" value={item.orderedCount || ''} disabled />
+                          <Input
+                            type="text"
+                            value={item.orderedCount || ''}
+                            disabled
+                          />
                         </div>
 
-                        <div className="">
+                        <div className="col-span-2">
                           <Label>Date</Label>
                           <Input
                             type="date"
@@ -580,8 +611,8 @@ const PickUpListRootPage = () => {
 
                         <div className="col-span-1">
                           <Label>Notes</Label>
-                          <Input
-                            type="text"
+                          <Textarea
+                            rows={3}
                             value={item.notes || ''}
                             onChange={(e) =>
                               handleItemFieldChange(

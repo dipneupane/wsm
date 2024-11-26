@@ -55,6 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 import { AdditionalInformations } from '../../add/page';
 import { PurchaseDialog } from '../../add/purchaseDialog';
@@ -116,7 +117,11 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
     queryFn: getAllCategories,
   });
 
-  const { data: inventoryItemsList, refetch: refetchInventory, isRefetching: isInventoryRefetching } = useQuery({
+  const {
+    data: inventoryItemsList,
+    refetch: refetchInventory,
+    isRefetching: isInventoryRefetching,
+  } = useQuery({
     queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
     queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
   });
@@ -143,12 +148,16 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   };
 
   const [pickListItems, setPickListItems] = React.useState<pickListItems[]>([]);
-  const [additionalInformation, setAdditionalInformation] = useState<AdditionalInformations[]>([]);
+  const [additionalInformation, setAdditionalInformation] = useState<
+    AdditionalInformations[]
+  >([]);
 
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  useEffect(() => { refetchInventory }, [pickListDataById]);
+  useEffect(() => {
+    refetchInventory;
+  }, [pickListDataById]);
 
   useEffect(() => {
     if (pickListDataById && !isInventoryRefetching) {
@@ -169,12 +178,13 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
       setAdditionalInformation(pickListDataById.additionalInformations ?? []);
 
       setPickListItems(
-        pickListDataById.pickListItems.map((item) => (
-          {
-            ...item,
-            date: new Date(item.date!).toISOString().split('T')[0],
-            orderedCount: inventoryItemsList?.filter(x => x.id == item.itemId)[0].orderedCount
-          }))
+        pickListDataById.pickListItems.map((item) => ({
+          ...item,
+          date: new Date(item.date!).toISOString().split('T')[0],
+          orderedCount: inventoryItemsList?.filter(
+            (x) => x.id == item.itemId
+          )[0].orderedCount,
+        }))
       );
     }
   }, [isInventoryRefetching]);
@@ -299,8 +309,8 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                       >
                         {field.value && customerList
                           ? customerList.find(
-                            (customer) => customer.id === field.value
-                          )?.fullName
+                              (customer) => customer.id === field.value
+                            )?.fullName
                           : 'Select Customer'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -465,14 +475,17 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                                           {
                                             itemId: item.id,
                                             categoryId: c.key,
-                                            itemCode: item.description + '-' + item.code,
+                                            itemCode:
+                                              item.description +
+                                              '-' +
+                                              item.code,
                                             madeOrderOfTheItems: false,
                                             supplierId: item.supplierId,
                                             order: 1,
                                             fireRating: item.fireRating,
                                             size: item.size,
                                             finish: item.finish,
-                                            orderedCount: item.orderedCount
+                                            orderedCount: item.orderedCount,
                                           },
                                         ])
                                       }
@@ -500,7 +513,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                     ?.stock ?? 0;
                 const hasExistingOrder =
                   typeof item.purchaseOrderId != 'undefined' &&
-                    item.purchaseOrderId > 0
+                  item.purchaseOrderId > 0
                     ? true
                     : false;
 
@@ -522,15 +535,15 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                       })}
                     >
                       <div className="grid grid-cols-12 gap-4 rounded px-5">
-                        <div className="col-span-4">
+                        <div className="col-span-3">
                           <Label>Item Code</Label>
-                          <Input value={item.itemCode} disabled type="text" />
+                          <Textarea rows={3} value={item.itemCode} disabled />
                         </div>
 
                         <div className="">
                           <Label>Fire Rating</Label>
-                          <Input
-                            type="text"
+                          <Textarea
+                            rows={3}
                             value={item.fireRating || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -544,8 +557,8 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
 
                         <div className="">
                           <Label>Size</Label>
-                          <Input
-                            type="text"
+                          <Textarea
+                            rows={3}
                             value={item.size || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -559,8 +572,8 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
 
                         <div className="">
                           <Label>Finish</Label>
-                          <Input
-                            type="text"
+                          <Textarea
+                            rows={3}
                             value={item.finish || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
@@ -575,7 +588,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                         <div className="">
                           <Label className="">
                             Order
-                            <span className="mt-2 text-nowrap text-xs">
+                            <span className="mt-2 text-nowrap text-[10px]">
                               (Stock:{' '}
                               {
                                 inventoryItemsList?.find(
@@ -613,10 +626,14 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
 
                         <div className="">
                           <Label>On Order</Label>
-                          <Input type="text" value={item.orderedCount || ''} disabled />
+                          <Input
+                            type="text"
+                            value={item.orderedCount || ''}
+                            disabled
+                          />
                         </div>
 
-                        <div className="">
+                        <div className="col-span-2">
                           <Label>Date</Label>
                           <Input
                             type="date"
@@ -633,8 +650,8 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
 
                         <div className="">
                           <Label>Notes</Label>
-                          <Input
-                            type="text"
+                          <Textarea
+                            rows={3}
                             value={item.notes || ''}
                             onChange={(e) =>
                               handleItemFieldChange(
