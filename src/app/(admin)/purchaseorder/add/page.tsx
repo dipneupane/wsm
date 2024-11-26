@@ -5,7 +5,10 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 
 import { getAllInventoryItems } from '@/services/inventory-item';
-import { createPurchaseOrder, getPurchaseOrderNumber } from '@/services/purchase-order';
+import {
+  createPurchaseOrder,
+  getPurchaseOrderNumber,
+} from '@/services/purchase-order';
 import { getAllSupplierInformation } from '@/services/supplier';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -83,19 +86,6 @@ const PurchaseOrderAddPage = () => {
     PurchaseOrderItems[]
   >([]);
 
-  // Initialize form with Zod resolver
-  const form = useForm<z.infer<typeof purchaseOrderSchema>>({
-    resolver: zodResolver(purchaseOrderSchema),
-    defaultValues: {
-      poNumber: '',
-      supplierId: 0,
-      orderDate: '',
-      requiredByDate: '',
-      paymentTerm: '',
-      statusId: 1,
-    },
-  });
-
   // Query hooks
   const { data: supplierList } = useQuery({
     queryKey: SUPPLIER_QUERY_KEY,
@@ -110,6 +100,19 @@ const PurchaseOrderAddPage = () => {
   const { data: inventoryItemsList } = useQuery({
     queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
     queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
+  });
+
+  // Initialize form with Zod resolver
+  const form = useForm<z.infer<typeof purchaseOrderSchema>>({
+    resolver: zodResolver(purchaseOrderSchema),
+    defaultValues: {
+      poNumber: purchaseOrderNumber,
+      supplierId: 0,
+      orderDate: '',
+      requiredByDate: '',
+      paymentTerm: '',
+      statusId: 1,
+    },
   });
 
   const queryClient = useQueryClient();
@@ -208,6 +211,7 @@ const PurchaseOrderAddPage = () => {
                   <FormLabel>Purchase Order Number</FormLabel>
                   <FormControl>
                     <Input
+                      disabled
                       {...field}
                       className={
                         form.formState.errors.poNumber ? 'border-red-500' : ''

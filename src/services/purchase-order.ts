@@ -11,13 +11,14 @@ import {
 import { apiClientWithClientHeader } from '@/lib/axios-config';
 
 interface filterProps {
-  "filterText": string,
-  "filterParams": any[]
+  filterText: string;
+  filterParams: any[];
 }
 export const getPurchaseOrderNumber = async (): Promise<any> => {
   try {
-    const { data } =
-      await apiClientWithClientHeader.get<ApiResponse<string[]>>('/PurchaseOrder/GetPurchaseOrderNumber');
+    const { data } = await apiClientWithClientHeader.get<ApiResponse<string[]>>(
+      '/PurchaseOrder/GetPurchaseOrderNumber'
+    );
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');
     }
@@ -27,12 +28,13 @@ export const getPurchaseOrderNumber = async (): Promise<any> => {
   }
 };
 
-export const getAllPurchaseOrderInformation = async (filter: filterProps = { "filterText": "", "filterParams": [] }): Promise<PurchaseOrderGetAllType[]> => {
+export const getAllPurchaseOrderInformation = async (
+  filter: filterProps = { filterText: '', filterParams: [] }
+): Promise<PurchaseOrderGetAllType[]> => {
   try {
-    const { data } =
-      await apiClientWithClientHeader.post<ApiResponse<PurchaseOrderGetAllType[]>>(
-        '/PurchaseOrder/GetAll', filter
-      );
+    const { data } = await apiClientWithClientHeader.post<
+      ApiResponse<PurchaseOrderGetAllType[]>
+    >('/PurchaseOrder/GetAll', filter);
 
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');
@@ -86,13 +88,17 @@ export const updatePurchaseOrder = async (data: PurchaseOrderUpdateType) => {
     }
     return res.data;
   } catch (error) {
+    console.log(error);
     throw error;
   }
 };
 
-export const getPurchaseOrderBySupplierID = async (id: number): Promise<PurchaseOrderGetBySupplierIDType[]> => {
+export const getPurchaseOrderBySupplierID = async (
+  id: number
+): Promise<PurchaseOrderGetBySupplierIDType[]> => {
   try {
-    const { data } = await apiClientWithClientHeader.get<ApiResponse<PurchaseOrderGetBySupplierIDType[]>
+    const { data } = await apiClientWithClientHeader.get<
+      ApiResponse<PurchaseOrderGetBySupplierIDType[]>
     >(`/PurchaseOrder/GetBySupplierId?SupplierId=${id}`);
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');

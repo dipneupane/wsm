@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { getAllInventoryItems } from '@/services/inventory-item';
 import {
   getPurchaseOrderById,
+  getPurchaseOrderNumber,
   updatePurchaseOrder,
 } from '@/services/purchase-order';
 import { getAllSupplierInformation } from '@/services/supplier';
@@ -57,7 +58,6 @@ import {
 
 // Validation schema
 const purchaseOrderSchema = z.object({
-  poNumber: z.string().min(1, 'PO Number is required'),
   supplierId: z.number().int().positive('Supplier is required'),
   orderDate: z.string().min(1, 'Order Date is required'),
   requiredByDate: z.string().min(1, 'Required By Date is required'),
@@ -105,6 +105,11 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
   });
 
+  const { data: purchaseOrderNumber } = useQuery({
+    queryKey: PURCHASEORDER_QUERY_KEY,
+    queryFn: getPurchaseOrderNumber,
+  });
+
   // Update mutation
   const mutation = useMutation({
     mutationFn: updatePurchaseOrder,
@@ -122,7 +127,6 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
   const form = useForm<z.infer<typeof purchaseOrderSchema>>({
     resolver: zodResolver(purchaseOrderSchema),
     defaultValues: {
-      poNumber: '',
       supplierId: 0,
       orderDate: '',
       requiredByDate: '',
@@ -147,7 +151,6 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
   useEffect(() => {
     if (purchaseOrderData) {
       form.reset({
-        poNumber: purchaseOrderData.poNumber,
         supplierId: purchaseOrderData.supplierId,
         orderDate: purchaseOrderData.orderDate.split('T')[0],
         requiredByDate: purchaseOrderData.requiredByDate.split('T')[0],
@@ -243,25 +246,14 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-            <FormField
-              control={form.control}
-              name="poNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>PO Number</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Enter PO number"
-                      className={
-                        form.formState.errors.poNumber ? 'border-red-500' : ''
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormItem>
+              <FormLabel>PO Number</FormLabel>
+              <FormControl>
+                <Input value={purchaseOrderNumber} disabled />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+
             <FormField
               control={form.control}
               name="supplierId"
