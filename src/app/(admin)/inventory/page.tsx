@@ -138,7 +138,7 @@ const InventoryRootPage = () => {
 
   return (
     <DashboardShell>
-      <DashboardHeader text="Manage your Inventory Item" heading="Inventory" />
+      <DashboardHeader text="Manage your Stock" heading="Stock" />
 
       <div className="flex w-full justify-end gap-x-2">
         <Button onClick={() => handleItemExport(data!)} disabled={isExporting}>

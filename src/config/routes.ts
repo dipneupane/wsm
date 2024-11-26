@@ -12,7 +12,7 @@ export interface SideBarSiteMap {
 }
 export const adminNavigationSiteMap: SideBarSiteMap[] = [
   {
-    name: 'Inventory',
+    name: 'Stock',
     path: '/inventory',
     icon: 'inventory',
     visible: true,
@@ -24,7 +24,7 @@ export const adminNavigationSiteMap: SideBarSiteMap[] = [
     visible: true,
   },
   {
-    name: 'Pick List',
+    name: 'Production Sheet',
     path: '/picklist',
     icon: 'picklist',
     visible: true,

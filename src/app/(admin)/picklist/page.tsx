@@ -137,7 +137,7 @@ export default function PickListRootPage() {
   return (
     <>
       <DashboardShell>
-        <DashboardHeader text=" Manage your Pick List" heading="Pick List" />
+        <DashboardHeader text=" Manage your Production Sheet" heading="Production Sheet" />
         <div className="flex w-full justify-end gap-x-2">
           <Link href="/picklist/add">
             <Button>
