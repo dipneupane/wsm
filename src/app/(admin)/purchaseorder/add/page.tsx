@@ -5,7 +5,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 
 import { getAllInventoryItems } from '@/services/inventory-item';
-import { createPurchaseOrder } from '@/services/purchase-order';
+import { createPurchaseOrder, getPurchaseOrderNumber } from '@/services/purchase-order';
 import { getAllSupplierInformation } from '@/services/supplier';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -102,6 +102,11 @@ const PurchaseOrderAddPage = () => {
     queryFn: getAllSupplierInformation,
   });
 
+  const { data: purchaseOrderNumber } = useQuery({
+    queryKey: PURCHASEORDER_QUERY_KEY,
+    queryFn: getPurchaseOrderNumber,
+  });
+
   const { data: inventoryItemsList } = useQuery({
     queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
     queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
@@ -121,7 +126,11 @@ const PurchaseOrderAddPage = () => {
     },
   });
 
-  const handleAddItem = (itemId: number, itemCode: string, itemCost: number) => {
+  const handleAddItem = (
+    itemId: number,
+    itemCode: string,
+    itemCost: number
+  ) => {
     setPurchaseOrderItems((prev: any) => [
       ...prev,
       {
@@ -223,7 +232,11 @@ const PurchaseOrderAddPage = () => {
                         role="combobox"
                         className={`justify-between ${form.formState.errors.supplierId ? 'border-red-500' : ''}`}
                       >
-                        {field.value && supplierList ? supplierList.find((supplier) => supplier.id === field.value)?.fullName : 'Select Supplier'}
+                        {field.value && supplierList
+                          ? supplierList.find(
+                              (supplier) => supplier.id === field.value
+                            )?.fullName
+                          : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -286,7 +299,11 @@ const PurchaseOrderAddPage = () => {
                     <Input
                       type="date"
                       {...field}
-                      className={form.formState.errors.requiredByDate ? 'border-red-500' : ''}
+                      className={
+                        form.formState.errors.requiredByDate
+                          ? 'border-red-500'
+                          : ''
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -303,7 +320,11 @@ const PurchaseOrderAddPage = () => {
                   <FormControl>
                     <Input
                       {...field}
-                      className={form.formState.errors.paymentTerm ? 'border-red-500' : ''}
+                      className={
+                        form.formState.errors.paymentTerm
+                          ? 'border-red-500'
+                          : ''
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -373,7 +394,9 @@ const PurchaseOrderAddPage = () => {
                               disabled={purchaseOrderItems?.some(
                                 (i) => i.itemId === item.id
                               )}
-                              onSelect={() => handleAddItem(item.id, item.code, item.cost)}
+                              onSelect={() =>
+                                handleAddItem(item.id, item.code, item.cost)
+                              }
                             >
                               {item.id} - {item.code} - {item.description}
                             </CommandItem>
@@ -391,11 +414,16 @@ const PurchaseOrderAddPage = () => {
               {purchaseOrderItems?.map((item: any) => (
                 <div
                   key={item.itemId}
-                  className="flex items-center justify-center gap-x-2 py-2"
+                  className="flex w-full items-center justify-center gap-x-2 py-2"
                 >
                   <div>
                     <Label>Item Code</Label>
-                    <Input value={item.itemCode} disabled type="text" />
+                    <Input
+                      className="w-80"
+                      value={item.itemCode}
+                      disabled
+                      type="text"
+                    />
                   </div>
 
                   <div>
@@ -403,31 +431,52 @@ const PurchaseOrderAddPage = () => {
                       Description
                     </Label>
                     <Input
+                      className="w-[560px]"
                       type="text"
                       id={`description-${item.itemId}`}
                       value={item.description}
-                      onChange={(e) => handleItemFieldChange(item.itemId, 'description', e.target.value)}
+                      onChange={(e) =>
+                        handleItemFieldChange(
+                          item.itemId,
+                          'description',
+                          e.target.value
+                        )
+                      }
                     />
                   </div>
 
                   <div>
                     <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
                     <Input
+                      className="w-20"
                       id={`quantity-${item.id}`}
                       type="number"
                       min={1}
                       value={item.quantity}
-                      onChange={(e) => handleItemFieldChange(item.itemId, 'quantity', e.target.value)}
+                      onChange={(e) =>
+                        handleItemFieldChange(
+                          item.itemId,
+                          'quantity',
+                          e.target.value
+                        )
+                      }
                     />
                   </div>
                   <div>
                     <Label htmlFor={`unitPrice-${item.id}`}>Unit Price</Label>
                     <Input
+                      className="w-20"
                       id={`unitPrice-${item.id}`}
                       type="text"
                       value={item.unitPrice}
                       required
-                      onChange={(e) => handleItemFieldChange(item.itemId, 'unitPrice', e.target.value)}
+                      onChange={(e) =>
+                        handleItemFieldChange(
+                          item.itemId,
+                          'unitPrice',
+                          e.target.value
+                        )
+                      }
                     />
                   </div>
 
@@ -435,7 +484,12 @@ const PurchaseOrderAddPage = () => {
                     type="button"
                     className="translate-y-3"
                     variant="destructive"
-                    onClick={() => setPurchaseOrderItems((prev: any) => prev.filter((v: any) => v.itemId !== item.itemId))}>
+                    onClick={() =>
+                      setPurchaseOrderItems((prev: any) =>
+                        prev.filter((v: any) => v.itemId !== item.itemId)
+                      )
+                    }
+                  >
                     <Trash2Icon />
                   </Button>
                 </div>

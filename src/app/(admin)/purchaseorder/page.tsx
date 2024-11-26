@@ -59,14 +59,9 @@ export default function Component() {
     queryFn: getAllSupplierInformation,
   });
 
-  useEffect(() => {
-    if ((filterText || statusId || supplierId) && openDropdown == null) {
-      refetch();
-    }
-  }, [filterText, statusId, supplierId, openDropdown]);
-
   const handleFilterChange = () => {
     setOpenDropdown(null);
+    refetch();
   };
 
   const handleFilterReset = () => {
@@ -74,6 +69,7 @@ export default function Component() {
     setStatusId([]);
     setSupplierId([]);
     setOpenDropdown(null);
+    refetch();
   };
 
   const handleDropdownToggle = (dropdown: string) => {

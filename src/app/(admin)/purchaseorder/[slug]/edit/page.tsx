@@ -139,7 +139,9 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     unitPrice: number;
   };
 
-  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<PurchaseOrderItems[]>([]);
+  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<
+    PurchaseOrderItems[]
+  >([]);
 
   // Prefill data when fetched
   useEffect(() => {
@@ -156,7 +158,11 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     }
   }, [purchaseOrderData, form]);
 
-  const handleAddItem = (itemId: number, itemCode: string, itemCost: number) => {
+  const handleAddItem = (
+    itemId: number,
+    itemCode: string,
+    itemCost: number
+  ) => {
     setPurchaseOrderItems((prev: any) => [
       ...prev,
       {
@@ -271,8 +277,8 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       >
                         {field.value && supplierList
                           ? supplierList.find(
-                            (supplier: any) => supplier.id === field.value
-                          )?.fullName
+                              (supplier: any) => supplier.id === field.value
+                            )?.fullName
                           : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -432,7 +438,9 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                               disabled={purchaseOrderItems?.some(
                                 (i) => i.itemId === item.id
                               )}
-                              onSelect={() => handleAddItem(item.id, item.code, item.cost)}
+                              onSelect={() =>
+                                handleAddItem(item.id, item.code, item.cost)
+                              }
                             >
                               {item.id} - {item.code} - {item.description}
                             </CommandItem>
@@ -455,6 +463,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                   <div>
                     <Label>Item Code</Label>
                     <Input
+                      className="w-80"
                       value={item.itemCode}
                       disabled
                       type="text"
@@ -466,6 +475,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       Description
                     </Label>
                     <Input
+                      className="w-[560px]"
                       type="text"
                       id={`description-${item.itemId}`}
                       value={item.description}
@@ -482,6 +492,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                   <div>
                     <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
                     <Input
+                      className="w-20"
                       id={`quantity-${item.id}`}
                       type="number"
                       required
@@ -499,6 +510,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                   <div>
                     <Label htmlFor={`unitPrice-${item.id}`}>Unit Price</Label>
                     <Input
+                      className="w-20"
                       id={`unitPrice-${item.id}`}
                       type="number"
                       value={item.unitPrice}
@@ -516,7 +528,12 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                     type="button"
                     className="translate-y-3"
                     variant="destructive"
-                    onClick={() => setPurchaseOrderItems((prev: any) => prev.filter((v: any) => v.itemId !== item.itemId))}>
+                    onClick={() =>
+                      setPurchaseOrderItems((prev: any) =>
+                        prev.filter((v: any) => v.itemId !== item.itemId)
+                      )
+                    }
+                  >
                     <Trash2Icon />
                   </Button>
                 </div>

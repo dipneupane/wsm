@@ -14,6 +14,18 @@ interface filterProps {
   "filterText": string,
   "filterParams": any[]
 }
+export const getPurchaseOrderNumber = async (): Promise<any> => {
+  try {
+    const { data } =
+      await apiClientWithClientHeader.get<ApiResponse<string[]>>('/PurchaseOrder/GetPurchaseOrderNumber');
+    if (!data.succeeded) {
+      throw new Error(data.messages[0] || 'Unknown error from the server');
+    }
+    return data.data;
+  } catch (error) {
+    throw error;
+  }
+};
 
 export const getAllPurchaseOrderInformation = async (filter: filterProps = { "filterText": "", "filterParams": [] }): Promise<PurchaseOrderGetAllType[]> => {
   try {
@@ -80,7 +92,7 @@ export const updatePurchaseOrder = async (data: PurchaseOrderUpdateType) => {
 
 export const getPurchaseOrderBySupplierID = async (id: number): Promise<PurchaseOrderGetBySupplierIDType[]> => {
   try {
-    const { data } = await apiClientWithClientHeader.get<      ApiResponse<PurchaseOrderGetBySupplierIDType[]>
+    const { data } = await apiClientWithClientHeader.get<ApiResponse<PurchaseOrderGetBySupplierIDType[]>
     >(`/PurchaseOrder/GetBySupplierId?SupplierId=${id}`);
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');

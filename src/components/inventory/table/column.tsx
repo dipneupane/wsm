@@ -73,6 +73,10 @@ export const columns: ColumnDef<InventoryItemsGetAllType>[] = [
     header: 'Reorder Level',
   },
   {
+    accessorKey: 'orderedCount',
+    header: 'On Order',
+  },
+  {
     id: 'actions',
     enableHiding: false,
     cell: ActionCellComponent,

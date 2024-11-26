@@ -88,6 +88,7 @@ export type pickListItems = {
   size?: string;
   finish?: string;
   order: number;
+  orderedCount?: number;
   date?: string;
   notes?: string;
   supplierId?: number;
@@ -435,7 +436,8 @@ const PickUpListRootPage = () => {
                                             order: 1,
                                             fireRating: item.fireRating,
                                             size: item.size,
-                                            finish: item.finish
+                                            finish: item.finish,
+                                            orderedCount: item.orderedCount
                                           },
                                         ])
                                       }
@@ -556,7 +558,12 @@ const PickUpListRootPage = () => {
                           </div>
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="">
+                          <Label>On Order</Label>
+                          <Input type="text" value={item.orderedCount || ''} disabled />
+                        </div>
+
+                        <div className="">
                           <Label>Date</Label>
                           <Input
                             type="date"

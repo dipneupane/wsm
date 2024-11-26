@@ -57,14 +57,9 @@ export default function PickListRootPage() {
     queryFn: getAllCustomerInformation,
   });
 
-  useEffect(() => {
-    if ((filterText || statusId || customerId) && openDropdown == null) {
-      refetch();
-    }
-  }, [filterText, statusId, customerId, openDropdown]);
-
   const handleFilterChange = () => {
     setOpenDropdown(null);
+    refetch();
   };
 
   const handleFilterReset = () => {
@@ -72,6 +67,7 @@ export default function PickListRootPage() {
     setStatusId([]);
     setCustomerId([]);
     setOpenDropdown(null);
+    refetch();
   };
 
   const handleDropdownToggle = (dropdown: string) => {

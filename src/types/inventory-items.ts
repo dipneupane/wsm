@@ -11,6 +11,7 @@ interface BaseInventoryItem {
   totalStockValue: number;
   safetyStockRequired: number;
   reorderLevel: number;
+  orderedCount?: number;
 }
 
 // Interface for the 'get by ID' operation, which includes additional fields

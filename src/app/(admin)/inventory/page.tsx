@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import Link from 'next/link';
 
@@ -54,12 +54,6 @@ const InventoryRootPage = () => {
     queryFn: getAllSupplierInformation,
   });
 
-  useEffect(() => {
-    if ((filterText || categoryId || supplierId) && openDropdown == null) {
-      refetch();
-    }
-  }, [filterText, categoryId, supplierId, openDropdown]);
-
   const [isExporting, setIsExporting] = useState(false);
 
   const handleItemExport = async (data: any) => {
@@ -70,6 +64,7 @@ const InventoryRootPage = () => {
 
   const handleFilterChange = () => {
     setOpenDropdown(null);
+    refetch();
   };
 
   const handleFilterReset = () => {
@@ -77,6 +72,7 @@ const InventoryRootPage = () => {
     setCategoryId([]);
     setSupplierId([]);
     setOpenDropdown(null);
+    refetch();
   };
 
   const handleDropdownToggle = (dropdown: string) => {

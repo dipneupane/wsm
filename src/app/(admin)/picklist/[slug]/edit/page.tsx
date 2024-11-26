@@ -116,7 +116,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
     queryFn: getAllCategories,
   });
 
-  const { data: inventoryItemsList } = useQuery({
+  const { data: inventoryItemsList, refetch: refetchInventory, isRefetching: isInventoryRefetching } = useQuery({
     queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
     queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
   });
@@ -134,6 +134,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
     size?: string;
     finish?: string;
     order?: number;
+    orderedCount?: number;
     date?: string;
     notes?: string;
     existingOrder?: number;
@@ -142,14 +143,15 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   };
 
   const [pickListItems, setPickListItems] = React.useState<pickListItems[]>([]);
-  const [additionalInformation, setAdditionalInformation] = useState<
-    AdditionalInformations[]
-  >([]);
+  const [additionalInformation, setAdditionalInformation] = useState<AdditionalInformations[]>([]);
+
   const queryClient = useQueryClient();
   const router = useRouter();
 
+  useEffect(() => { refetchInventory }, [pickListDataById]);
+
   useEffect(() => {
-    if (pickListDataById) {
+    if (pickListDataById && !isInventoryRefetching) {
       form.reset({
         id: pickListDataById.id,
         referenceNo: pickListDataById.referenceNo,
@@ -165,14 +167,17 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
         frameFinish: pickListDataById.frameFinish,
       });
       setAdditionalInformation(pickListDataById.additionalInformations ?? []);
+
       setPickListItems(
-        pickListDataById.pickListItems.map((item) => ({
-          ...item,
-          date: new Date(item.date!).toISOString().split('T')[0],
-        }))
+        pickListDataById.pickListItems.map((item) => (
+          {
+            ...item,
+            date: new Date(item.date!).toISOString().split('T')[0],
+            orderedCount: inventoryItemsList?.filter(x => x.id == item.itemId)[0].orderedCount
+          }))
       );
     }
-  }, [pickListDataById]);
+  }, [isInventoryRefetching]);
 
   const mutation = useMutation({
     mutationFn: updatePickList,
@@ -214,7 +219,6 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
       pickListItems: pickListItemsWithoutCategory,
       additionalInformations: additionalInformation,
     };
-    debugger;
     mutation.mutateAsync(data);
   };
 
@@ -467,7 +471,8 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                                             order: 1,
                                             fireRating: item.fireRating,
                                             size: item.size,
-                                            finish: item.finish
+                                            finish: item.finish,
+                                            orderedCount: item.orderedCount
                                           },
                                         ])
                                       }
@@ -606,7 +611,12 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                           </div>
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="">
+                          <Label>On Order</Label>
+                          <Input type="text" value={item.orderedCount || ''} disabled />
+                        </div>
+
+                        <div className="">
                           <Label>Date</Label>
                           <Input
                             type="date"
