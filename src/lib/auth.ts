@@ -19,7 +19,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/Account/authenticate?userName=${email}&password=${password}`
         );
-        console.log(response);
         if (response.status !== 200) throw null;
         const data: ApiResponse<Auth> = await response.json();
 

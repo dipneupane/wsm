@@ -464,8 +464,11 @@ const PickUpListRootPage = () => {
                                       }
                                       key={item.categoryId}
                                     >
-                                      {item.categoryId}-{item.id} -{item.code} -{' '}
-                                      {item.description}
+                                      {item.categoryId}-{item.id} -{item.code}
+                                      {item.description} -
+                                      <span className="text-sm">
+                                        Stock({item.stock})
+                                      </span>
                                     </CommandItem>
                                   }
                                 </>

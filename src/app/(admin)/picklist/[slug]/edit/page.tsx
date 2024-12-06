@@ -132,6 +132,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   });
 
   type pickListItems = {
+    id?: number;
     categoryId?: number;
     itemId: number;
     itemCode: string;
@@ -180,6 +181,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
       setPickListItems(
         pickListDataById.pickListItems.map((item) => ({
           ...item,
+          id: item.id,
           date: new Date(item.date!).toISOString().split('T')[0],
           orderedCount: inventoryItemsList?.filter(
             (x) => x.id == item.itemId
@@ -215,6 +217,7 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
   const onSubmit = async (values: z.infer<typeof pickListSchema>) => {
     const validatedData = pickListSchema.parse(values);
     const pickListItemsWithoutCategory = pickListItems.map((p) => ({
+      id: p.id,
       itemId: p.itemId,
       fireRating: p.fireRating,
       size: p.size,
@@ -492,7 +495,10 @@ const PickUpListEditPage = ({ params: { slug } }: PickListProps) => {
                                       key={item.categoryId}
                                     >
                                       {item.categoryId}-{item.id} -{item.code} -{' '}
-                                      {item.description}
+                                      {item.description}-
+                                      <span className="text-sm">
+                                        Stock({item.stock})
+                                      </span>
                                     </CommandItem>
                                   }
                                 </>

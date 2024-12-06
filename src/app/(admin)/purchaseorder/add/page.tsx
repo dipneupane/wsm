@@ -243,8 +243,8 @@ const PurchaseOrderAddPage = () => {
                       >
                         {field.value && supplierList
                           ? supplierList.find(
-                            (supplier) => supplier.id === field.value
-                          )?.fullName
+                              (supplier) => supplier.id === field.value
+                            )?.fullName
                           : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -404,10 +404,18 @@ const PurchaseOrderAddPage = () => {
                                 (i) => i.itemId === item.id
                               )}
                               onSelect={() =>
-                                handleAddItem(item.id, item.code, item.cost, item.description)
+                                handleAddItem(
+                                  item.id,
+                                  item.code,
+                                  item.cost,
+                                  item.description
+                                )
                               }
                             >
-                              {item.id} - {item.code} - {item.description}
+                              {item.id} - {item.code} - {item.description} -
+                              <span className="text-sm">
+                                Stock({item.stock})
+                              </span>
                             </CommandItem>
                           ))}
                         </ScrollArea>

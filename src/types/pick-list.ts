@@ -32,7 +32,7 @@ interface IPickListItems {
   categoryId?: number;
 }
 
-interface ICreatePickListItem extends IPickListBase {}
+interface ICreatePickListItem extends IPickListBase { }
 
 export type PickListCreateType = ICreatePickListItem;
 
@@ -60,6 +60,7 @@ export type PickListGetByIdType = {
   ironMongeryFinish?: string;
   frameFinish?: string;
   pickListItems: {
+    id: number;
     categoryId?: number;
     itemId: number;
     itemCode: string;

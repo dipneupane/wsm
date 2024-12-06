@@ -1,5 +1,6 @@
 // Base interface for Purchase Order items
 interface IPurchaseOrderItemsBase {
+  id: number;
   itemId: number;
   description: string;
   quantity: number;

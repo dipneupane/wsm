@@ -131,6 +131,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
   });
 
   type PurchaseOrderItems = {
+    id: number;
     itemId: number;
     itemCode: string;
     description: string;
@@ -161,7 +162,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     itemId: number,
     itemCode: string,
     itemCost: number,
-    description: string,
+    description: string
   ) => {
     setPurchaseOrderItems((prev: any) => [
       ...prev,
@@ -218,7 +219,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
       ...values,
       id: currentSlug,
       purchaseOrderItems: purchaseOrderItems.map((item) => ({
-        id: Number(item.itemId),
+        id: Number(item.id),
         itemId: Number(item.itemId),
         purchaseOrderId: currentSlug,
         description: item.description,
@@ -266,8 +267,8 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       >
                         {field.value && supplierList
                           ? supplierList.find(
-                            (supplier: any) => supplier.id === field.value
-                          )?.fullName
+                              (supplier: any) => supplier.id === field.value
+                            )?.fullName
                           : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -428,10 +429,18 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                                 (i) => i.itemId === item.id
                               )}
                               onSelect={() =>
-                                handleAddItem(item.id, item.code, item.cost, item.description)
+                                handleAddItem(
+                                  item.id,
+                                  item.code,
+                                  item.cost,
+                                  item.description
+                                )
                               }
                             >
-                              {item.id} - {item.code} - {item.description}
+                              {item.id} - {item.code} - {item.description}-
+                              <span className="text-sm">
+                                Stock({item.stock})
+                              </span>
                             </CommandItem>
                           ))}
                         </ScrollArea>
