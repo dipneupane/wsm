@@ -13,3 +13,9 @@ export type CustomerCreateType = CustomerBase;
 export type CustomerGetByIDType = CustomerWithID;
 export type CustomerUpdateType = CustomerWithID;
 export type CustomerGetAllType = CustomerWithID;
+
+export interface CustomerGetHistoryType {
+  createdDate: string; 
+  itemName: string;
+  count: number;
+}

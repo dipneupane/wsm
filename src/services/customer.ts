@@ -96,10 +96,10 @@ export const updateCustomer = async (data: CustomerUpdateType) => {
 
 export const getCustomerHistoryById = async (
   id: number
-): Promise<CustomerGetHistoryType> => {
+): Promise<CustomerGetHistoryType[]> => {
   try {
     const { data } = await apiClientWithClientHeader.get<
-      ApiResponse<CustomerGetHistoryType>
+      ApiResponse<CustomerGetHistoryType[]>
     >(`/Customer/GetHistory?Id=${id}`);
     if (!data.succeeded) {
       throw new Error(data.messages[0] || 'Unknown error from the server');

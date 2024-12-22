@@ -431,7 +431,7 @@ const PickUpListRootPage = () => {
                       <CommandGroup>
                         <ScrollArea className="h-64">
                           {isInventoryListLoading && (
-                            <Loader2Icon className="animate-spin" />
+                            <Loader2Icon className="mx-auto animate-spin" />
                           )}
                           {inventoryItemsList?.map(
                             (item) =>

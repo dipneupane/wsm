@@ -382,7 +382,11 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       field.onChange(Number(value));
                       setSelectedStatusId(Number(value));
                     }}
-                    value={field.value ? Number(field.value).toString() : undefined}
+                    value={
+                      field.value
+                        ? field.value.toString()
+                        : STATUS.Draft.toString()
+                    }
                   >
                     <SelectTrigger
                       className={

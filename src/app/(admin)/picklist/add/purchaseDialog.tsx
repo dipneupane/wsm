@@ -211,7 +211,7 @@ const PurchaseOrderForm = ({ supplierId, onCreateSuccess }: {
       supplierId,
       orderDate: new Date().toISOString(),
       requiredByDate: '',
-      paymentTerm: '',
+      paymentTerm: '30 Days',
       statusId: 1,
     },
   });

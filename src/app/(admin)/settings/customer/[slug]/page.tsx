@@ -7,6 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 
+import { CustomerGetByIDType, CustomerGetHistoryType } from '@/types/customer';
+
 import { CUSTOMERHISTORY_QUERY_KEY } from '@/config/query-keys';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { CustomerHistoryType } from '@/types/inventory-items';
 
 interface CustomerViewProps {
   params: {
@@ -27,7 +28,7 @@ interface CustomerViewProps {
 }
 const CustomerViewPage = ({ params: { slug } }: CustomerViewProps) => {
   const { data: customerDetails, isLoading: isCustomerDataLoading } =
-    useQuery<CustomerHistoryType>({
+    useQuery<CustomerGetByIDType>({
       queryKey: ['customer_data'],
       queryFn: () => getCustomerById(Number(slug)),
     });
@@ -35,7 +36,7 @@ const CustomerViewPage = ({ params: { slug } }: CustomerViewProps) => {
     data: customerHistory,
     isLoading,
     error,
-  } = useQuery<CustomerGetHistoryType>({
+  } = useQuery<CustomerGetHistoryType[]>({
     queryKey: [...CUSTOMERHISTORY_QUERY_KEY, slug],
     queryFn: () => getCustomerHistoryById(Number(slug)),
   });
@@ -113,7 +114,7 @@ const CustomerViewPage = ({ params: { slug } }: CustomerViewProps) => {
             </TableHeader>
             <TableBody>
               {customerHistory &&
-                customerHistory?.map(
+                customerHistory.map(
                   (item: CustomerGetHistoryType, index: number) => (
                     <TableRow key={index}>
                       <TableCell>{item.itemName || 'N/A'}</TableCell>
