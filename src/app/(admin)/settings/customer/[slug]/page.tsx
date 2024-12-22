@@ -7,8 +7,6 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 
-import { CustomerGetByIDType, CustomerGetHistoryType } from '@/types/customer';
-
 import { CUSTOMERHISTORY_QUERY_KEY } from '@/config/query-keys';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CustomerHistoryType } from '@/types/inventory-items';
 
 interface CustomerViewProps {
   params: {
@@ -28,7 +27,7 @@ interface CustomerViewProps {
 }
 const CustomerViewPage = ({ params: { slug } }: CustomerViewProps) => {
   const { data: customerDetails, isLoading: isCustomerDataLoading } =
-    useQuery<CustomerGetByIDType>({
+    useQuery<CustomerHistoryType>({
       queryKey: ['customer_data'],
       queryFn: () => getCustomerById(Number(slug)),
     });
