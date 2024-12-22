@@ -69,6 +69,7 @@ const STATUS = {
   Draft: 1,
   Ordered: 2,
   Received: 3,
+  PartialReceived: 4
 } as const;
 
 const PurchaseOrderAddPage = () => {
@@ -93,15 +94,14 @@ const PurchaseOrderAddPage = () => {
   });
 
   const { data: purchaseOrderNumber } = useQuery({
-    queryKey: PURCHASEORDER_QUERY_KEY,
+    queryKey: ['purchaseOderNumber'],
     queryFn: getPurchaseOrderNumber,
   });
 
   const { data: inventoryItemsList } = useQuery({
-    queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
+    queryKey: [...INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
     queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
   });
-
   // Initialize form with Zod resolver
   const form = useForm<z.infer<typeof purchaseOrderSchema>>({
     resolver: zodResolver(purchaseOrderSchema),
@@ -110,7 +110,7 @@ const PurchaseOrderAddPage = () => {
       supplierId: 0,
       orderDate: '',
       requiredByDate: '',
-      paymentTerm: '',
+      paymentTerm: '30 Days',
       statusId: 1,
     },
   });
@@ -126,6 +126,7 @@ const PurchaseOrderAddPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PURCHASEORDER_QUERY_KEY });
       toast.success('Purchase order created successfully');
+      router.refresh();
       router.push('/purchaseorder');
     },
     onError: (error: any) => {
@@ -368,6 +369,9 @@ const PurchaseOrderAddPage = () => {
                       <SelectItem value={STATUS.Received.toString()}>
                         Received
                       </SelectItem>
+                      <SelectItem value={STATUS.PartialReceived.toString()}>
+                        Partial Received
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -412,9 +416,11 @@ const PurchaseOrderAddPage = () => {
                                 )
                               }
                             >
-                              {item.id} - {item.code} - {item.description} -
+                              {item.id} - {item.code} - Category:{' '}
+                              {item.categoryName} - {item.description}
                               <span className="text-sm">
-                                Stock({item.stock})
+                                Stock({item.stock}) | Supplier:{' '}
+                                {item.supplierName}
                               </span>
                             </CommandItem>
                           ))}

@@ -4,6 +4,7 @@ interface IPurchaseOrderItemsBase {
   itemId: number;
   description: string;
   quantity: number;
+  receivedQuantity: number;
   unitPrice: number;
 }
 

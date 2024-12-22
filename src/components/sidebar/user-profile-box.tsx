@@ -65,7 +65,7 @@ const UserProfileBox = () => {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
-            signOut({ callbackUrl: '/login' });
+            signOut({ redirectTo: '/' });
           }}
         >
           <LogOutIcon />

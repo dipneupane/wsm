@@ -1,6 +1,7 @@
 import { ApiResponse } from '@/types';
 
 import {
+  InventoryCustomersGetByIdType,
   InventoryItemCreateType,
   InventoryItemGetByIdType,
   InventoryItemsGetAllType,
@@ -83,3 +84,20 @@ export const getInventoryItemById = async (
     throw error;
   }
 };
+
+export const getInventoryCustomersItemById = async (
+  id: number
+): Promise<InventoryCustomersGetByIdType> => {
+  try {
+    const { data } = await apiClientWithClientHeader.get<ApiResponse<any>>(
+      `Item/GetHistory?Id=${id}`
+    );
+    if (!data.succeeded) {
+      throw new Error(data.messages[0] || 'Unknown error from the server');
+    }
+    return data.data;
+  } catch (error) {
+    throw error;
+  }
+};
+

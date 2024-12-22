@@ -40,7 +40,7 @@ export default function PickListRootPage() {
   ];
 
   const { data, isLoading, refetch, isPending, isFetching } = useQuery({
-    queryKey: [PICKLIST_QUERY_KEY],
+    queryKey: PICKLIST_QUERY_KEY,
     queryFn: () =>
       getAllPickListInformation({
         filterText,
@@ -49,17 +49,18 @@ export default function PickListRootPage() {
           { key: 'statusId', value: statusId },
         ],
       }),
-    initialData: [],
+    // initialData: [],
+    staleTime: 1000 * 60 * 5,
   });
 
   let { data: customers } = useQuery({
-    queryKey: [CUSTOMER_QUERY_KEY],
+    queryKey: CUSTOMER_QUERY_KEY,
     queryFn: getAllCustomerInformation,
   });
 
   const handleFilterChange = () => {
     setOpenDropdown(null);
-    refetch();
+    setTimeout(() => refetch(), 0);
   };
 
   const handleFilterReset = () => {
@@ -67,7 +68,7 @@ export default function PickListRootPage() {
     setStatusId([]);
     setCustomerId([]);
     setOpenDropdown(null);
-    refetch();
+    setTimeout(() => refetch(), 0);
   };
 
   const handleDropdownToggle = (dropdown: string) => {
@@ -137,7 +138,10 @@ export default function PickListRootPage() {
   return (
     <>
       <DashboardShell>
-        <DashboardHeader text=" Manage your Production Sheet" heading="Production Sheet" />
+        <DashboardHeader
+          text=" Manage your Production Sheet"
+          heading="Production Sheet"
+        />
         <div className="flex w-full justify-end gap-x-2">
           <Link href="/picklist/add">
             <Button>

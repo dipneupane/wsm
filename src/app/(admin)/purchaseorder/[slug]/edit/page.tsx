@@ -75,6 +75,7 @@ const STATUS = {
   Draft: 1,
   Ordered: 2,
   Received: 3,
+  PartialReceived: 4,
 };
 
 const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
@@ -136,12 +137,12 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     itemCode: string;
     description: string;
     quantity: number;
+    receivedQuantity: number;
     unitPrice: number;
   };
 
-  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<
-    PurchaseOrderItems[]
-  >([]);
+  const [selectedStatusId, setSelectedStatusId] = React.useState<number>();
+  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<PurchaseOrderItems[]>([]);
 
   // Prefill data when fetched
   useEffect(() => {
@@ -155,6 +156,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
       });
       //@ts-ignore
       setPurchaseOrderItems(purchaseOrderData.purchaseOrderItems || []);
+      setSelectedStatusId(purchaseOrderData.statusId);
     }
   }, [purchaseOrderData, form]);
 
@@ -176,11 +178,15 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     ]);
   };
 
-  const handleItemFieldChange = (
-    itemId: number,
-    field: string,
-    value: string
-  ) => {
+  const handleItemFieldChange = (item: any, field: string, value: string) => {
+    const itemId = item.itemId;
+
+    if (field === 'receivedQuantity' && value > item.quantity) {
+      alert('received quantity should not be greater than actual quantity');
+      return;
+    }
+
+
     if (field === 'quantity' || field === 'unitPrice') {
       // Allow empty string
       if (value === '') {
@@ -224,6 +230,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
         purchaseOrderId: currentSlug,
         description: item.description,
         quantity: Number(item.quantity),
+        receivedQuantity: Number(item.receivedQuantity),
         unitPrice: Number(item.unitPrice),
       })),
     };
@@ -267,8 +274,8 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       >
                         {field.value && supplierList
                           ? supplierList.find(
-                              (supplier: any) => supplier.id === field.value
-                            )?.fullName
+                            (supplier: any) => supplier.id === field.value
+                          )?.fullName
                           : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -363,6 +370,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="statusId"
@@ -370,10 +378,11 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                 <FormItem>
                   <FormLabel>Status</FormLabel>
                   <Select
-                    onValueChange={(value) => field.onChange(Number(value))}
-                    value={
-                      field.value ? Number(field.value).toString() : undefined
-                    }
+                    onValueChange={(value) => {
+                      field.onChange(Number(value));
+                      setSelectedStatusId(Number(value));
+                    }}
+                    value={field.value ? Number(field.value).toString() : undefined}
                   >
                     <SelectTrigger
                       className={
@@ -391,6 +400,9 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       </SelectItem>
                       <SelectItem value={STATUS.Received.toString()}>
                         Received
+                      </SelectItem>
+                      <SelectItem value={STATUS.PartialReceived.toString()}>
+                        Partial Received
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -477,13 +489,18 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       type="text"
                       id={`description-${item.itemId}`}
                       value={item.description}
-                      onChange={(e) =>
-                        handleItemFieldChange(
-                          item.itemId,
-                          'description',
-                          e.target.value
-                        )
-                      }
+                      onChange={(e) => handleItemFieldChange(item, 'description', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor={`unitPrice-${item.id}`}>Unit Price</Label>
+                    <Input
+                      className="w-20"
+                      id={`unitPrice-${item.id}`}
+                      type="number"
+                      value={item.unitPrice}
+                      onChange={(e) => handleItemFieldChange(item, 'unitPrice', e.target.value)}
                     />
                   </div>
 
@@ -496,31 +513,44 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       required
                       min={1}
                       value={item.quantity}
-                      onChange={(e) =>
-                        handleItemFieldChange(
-                          item.itemId,
-                          'quantity',
-                          e.target.value
-                        )
-                      }
+                      disabled={selectedStatusId == STATUS.Received || selectedStatusId == STATUS.PartialReceived ? true : false}
+                      onChange={(e) => handleItemFieldChange(item, 'quantity', e.target.value)}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor={`unitPrice-${item.id}`}>Unit Price</Label>
-                    <Input
-                      className="w-20"
-                      id={`unitPrice-${item.id}`}
-                      type="number"
-                      value={item.unitPrice}
-                      onChange={(e) =>
-                        handleItemFieldChange(
-                          item.itemId,
-                          'unitPrice',
-                          e.target.value
-                        )
-                      }
-                    />
-                  </div>
+
+                  {selectedStatusId == STATUS.Received &&
+                    <div>
+                      <Label htmlFor={`receivedQuantity-${item.id}`}>Received</Label>
+                      <Input
+                        className="w-20"
+                        id={`receivedQuantity-${item.id}`}
+                        type="number"
+                        required
+                        min={1}
+                        disabled
+                        value={item.quantity}
+                        onChange={(e) => handleItemFieldChange(item, 'receivedQuantity', e.target.value)}
+                      />
+                    </div>
+                  }
+
+                  {selectedStatusId == STATUS.PartialReceived &&
+                    <div>
+                      <div className='mt-3'>
+                        <Label htmlFor={`receivedQuantity-${item.id}`}>Received</Label>
+                        <Input
+                          className="w-20"
+                          id={`receivedQuantity-${item.id}`}
+                          type="number"
+                          required
+                          min={1}
+                          value={item.receivedQuantity}
+                          onChange={(e) => handleItemFieldChange(item, 'receivedQuantity', e.target.value)}
+                        />
+                      </div>
+                      <div className={`text-xs ${(item.quantity ?? 0) - (item.receivedQuantity ?? 0) == 0 ? 'text-green-500' : 'text-red-500'}`}>remaining: {(item.quantity ?? 0) - (item.receivedQuantity ?? 0)}</div>
+                    </div>
+                  }
 
                   <Button
                     type="button"

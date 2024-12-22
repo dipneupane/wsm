@@ -4,6 +4,7 @@ import {
   CustomerCreateType,
   CustomerGetAllType,
   CustomerGetByIDType,
+  CustomerGetHistoryType,
   CustomerUpdateType,
 } from '@/types/customer';
 
@@ -88,6 +89,22 @@ export const updateCustomer = async (data: CustomerUpdateType) => {
       );
     }
     return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getCustomerHistoryById = async (
+  id: number
+): Promise<CustomerGetHistoryType> => {
+  try {
+    const { data } = await apiClientWithClientHeader.get<
+      ApiResponse<CustomerGetHistoryType>
+    >(`/Customer/GetHistory?Id=${id}`);
+    if (!data.succeeded) {
+      throw new Error(data.messages[0] || 'Unknown error from the server');
+    }
+    return data.data;
   } catch (error) {
     throw error;
   }

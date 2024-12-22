@@ -52,15 +52,15 @@ const formSchema = z.object({
   finish: z.any().optional(),
   cost: z.any(),
   description: z.any().optional(),
-  categoryId: z.number().min(1, "required"),
-  supplierId: z.number().min(1, "required"),
+  categoryId: z.number().min(1, 'required'),
+  supplierId: z.number().min(1, 'required'),
   stock: z.any(),
   totalStockValue: z.any(),
   safetyStockRequired: z.any(),
-  reorderLevel: z.any()
+  reorderLevel: z.any(),
 });
 
-export default function AddInventoryItemForm({ }: {}) {
+export default function AddInventoryItemForm({}: {}) {
   const router = useRouter();
   const supplierData = useQuery({
     queryKey: SUPPLIER_QUERY_KEY,
@@ -100,7 +100,10 @@ export default function AddInventoryItemForm({ }: {}) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto max-w-3xl space-y-8 py-10">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="mx-auto max-w-3xl space-y-8 py-10"
+      >
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-4">
             <FormField
@@ -196,7 +199,12 @@ export default function AddInventoryItemForm({ }: {}) {
                 <FormItem>
                   <FormLabel>Stock</FormLabel>
                   <FormControl>
-                    <Input placeholder="" type="number" defaultValue={0} {...field} />
+                    <Input
+                      placeholder=""
+                      type="number"
+                      defaultValue={0}
+                      {...field}
+                    />
                   </FormControl>
 
                   <FormMessage />
@@ -205,7 +213,6 @@ export default function AddInventoryItemForm({ }: {}) {
             />
           </div>
         </div>
-
 
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-4">
@@ -216,7 +223,12 @@ export default function AddInventoryItemForm({ }: {}) {
                 <FormItem>
                   <FormLabel>Total Stock Value</FormLabel>
                   <FormControl>
-                    <Input placeholder="" type="number" defaultValue={0} {...field} />
+                    <Input
+                      placeholder=""
+                      type="number"
+                      defaultValue={0}
+                      {...field}
+                    />
                   </FormControl>
 
                   <FormMessage />
@@ -233,7 +245,12 @@ export default function AddInventoryItemForm({ }: {}) {
                 <FormItem>
                   <FormLabel>Safety Stock Required</FormLabel>
                   <FormControl>
-                    <Input placeholder="" type="number" defaultValue={0} {...field} />
+                    <Input
+                      placeholder=""
+                      type="number"
+                      defaultValue={0}
+                      {...field}
+                    />
                   </FormControl>
 
                   <FormMessage />
@@ -250,7 +267,12 @@ export default function AddInventoryItemForm({ }: {}) {
                 <FormItem>
                   <FormLabel>Reorder Level</FormLabel>
                   <FormControl>
-                    <Input placeholder="" type="number" defaultValue={0} {...field} />
+                    <Input
+                      placeholder=""
+                      type="number"
+                      defaultValue={0}
+                      {...field}
+                    />
                   </FormControl>
 
                   <FormMessage />
@@ -274,8 +296,16 @@ export default function AddInventoryItemForm({ }: {}) {
                         <Button
                           variant="outline"
                           role="combobox"
-                          className={cn('w-100 justify-between', !field.value && 'text-muted-foreground')}>
-                          {field.value && categoryData?.data ? categoryData?.data.find((d) => d.key === field.value)?.value : 'Select Category'}
+                          className={cn(
+                            'w-100 justify-between',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value && categoryData?.data
+                            ? categoryData?.data.find(
+                                (d) => d.key === field.value
+                              )?.value
+                            : 'Select Category'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </FormControl>
@@ -290,8 +320,18 @@ export default function AddInventoryItemForm({ }: {}) {
                               <CommandItem
                                 value={d.value}
                                 key={d.key}
-                                onSelect={() => { form.setValue('categoryId', d.key); }}>
-                                <Check className={cn('mr-2 h-4 w-4', d.key === field.value ? 'opacity-100' : 'opacity-0')} />
+                                onSelect={() => {
+                                  form.setValue('categoryId', d.key);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    d.key === field.value
+                                      ? 'opacity-100'
+                                      : 'opacity-0'
+                                  )}
+                                />
                                 {d.value}
                               </CommandItem>
                             ))}
@@ -319,8 +359,16 @@ export default function AddInventoryItemForm({ }: {}) {
                         <Button
                           variant="outline"
                           role="combobox"
-                          className={cn('w-100 justify-between', !field.value && 'text-muted-foreground')}>
-                          {field.value && supplierData?.data ? supplierData?.data.find((s) => s.id === field.value)?.fullName : 'Select Supplier'}
+                          className={cn(
+                            'w-100 justify-between',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value && supplierData?.data
+                            ? supplierData?.data.find(
+                                (s) => s.id === field.value
+                              )?.fullName
+                            : 'Select Supplier'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </FormControl>
@@ -332,8 +380,21 @@ export default function AddInventoryItemForm({ }: {}) {
                           <CommandEmpty>No Category found.</CommandEmpty>
                           <CommandGroup>
                             {supplierData.data?.map((s) => (
-                              <CommandItem value={s.fullName} key={s.id.toString()} onSelect={() => { form.setValue('supplierId', s.id); }}>
-                                <Check className={cn('mr-2 h-4 w-4', s.id == field.value ? 'opacity-100' : 'opacity-0')} />
+                              <CommandItem
+                                value={s.fullName}
+                                key={s.id.toString()}
+                                onSelect={() => {
+                                  form.setValue('supplierId', s.id);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    s.id == field.value
+                                      ? 'opacity-100'
+                                      : 'opacity-0'
+                                  )}
+                                />
                                 {s.fullName}
                               </CommandItem>
                             ))}
@@ -356,10 +417,7 @@ export default function AddInventoryItemForm({ }: {}) {
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea
-                  className="resize-none"
-                  {...field}
-                />
+                <Textarea className="resize-none" {...field} />
               </FormControl>
 
               <FormMessage />
@@ -373,7 +431,9 @@ export default function AddInventoryItemForm({ }: {}) {
               <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
               Submitting...
             </>
-          ) : ('Submit')}
+          ) : (
+            'Submit'
+          )}
         </Button>
       </form>
     </Form>

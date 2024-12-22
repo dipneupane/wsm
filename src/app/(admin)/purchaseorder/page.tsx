@@ -42,7 +42,7 @@ export default function Component() {
     },
   ];
   const { data, isLoading, refetch, isPending, isFetching } = useQuery({
-    queryKey: [PURCHASEORDER_QUERY_KEY],
+    queryKey: PURCHASEORDER_QUERY_KEY,
     queryFn: () =>
       getAllPurchaseOrderInformation({
         filterText,
@@ -51,9 +51,9 @@ export default function Component() {
           { key: 'supplierId', value: supplierId },
         ],
       }),
-    initialData: [],
+    // initialData: [],
+    staleTime: 1000 * 60 * 5,
   });
-
   let { data: suppliers } = useQuery({
     queryKey: SUPPLIER_QUERY_KEY,
     queryFn: getAllSupplierInformation,
@@ -61,7 +61,7 @@ export default function Component() {
 
   const handleFilterChange = () => {
     setOpenDropdown(null);
-    refetch();
+    setTimeout(() => refetch(), 0);
   };
 
   const handleFilterReset = () => {
@@ -69,7 +69,7 @@ export default function Component() {
     setStatusId([]);
     setSupplierId([]);
     setOpenDropdown(null);
-    refetch();
+    setTimeout(() => refetch(), 0);
   };
 
   const handleDropdownToggle = (dropdown: string) => {

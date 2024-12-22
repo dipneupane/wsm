@@ -74,6 +74,14 @@ export default function ActionCellComponent({ row }: ICellComponentProps) {
               className="w-full"
               href={`/settings/customer/${row.original.id}`}
             >
+              View
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <Link
+              className="w-full"
+              href={`/settings/customer/${row.original.id}/edit`}
+            >
               Edit
             </Link>
           </DropdownMenuItem>

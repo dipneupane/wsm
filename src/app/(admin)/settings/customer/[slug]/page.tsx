@@ -1,48 +1,45 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React from 'react';
 
-import { getCustomerById } from '@/services/customer';
+import { getCustomerById, getCustomerHistoryById } from '@/services/customer';
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 
-import { CustomerGetByIDType } from '@/types/customer';
+import { CustomerGetByIDType, CustomerGetHistoryType } from '@/types/customer';
 
-import EditCustomerForm from '@/components/customer/customer-edit-form';
-import { Card } from '@/components/ui/card';
+import { CUSTOMERHISTORY_QUERY_KEY } from '@/config/query-keys';
 
-interface InventoryEditProps {
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+interface CustomerViewProps {
   params: {
     slug: string;
   };
 }
-
-const InventoryEdit = ({ params: { slug } }: InventoryEditProps) => {
-  const [data, setData] = useState<CustomerGetByIDType>();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!slug) {
-        setIsLoading(false);
-        return;
-      }
-      try {
-        setIsLoading(true);
-        setError(null);
-        const result = await getCustomerById(Number(slug));
-        setData(result);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error('Unknown error occurred')
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [slug]);
+const CustomerViewPage = ({ params: { slug } }: CustomerViewProps) => {
+  const { data: customerDetails, isLoading: isCustomerDataLoading } =
+    useQuery<CustomerGetByIDType>({
+      queryKey: ['customer_data'],
+      queryFn: () => getCustomerById(Number(slug)),
+    });
+  const {
+    data: customerHistory,
+    isLoading,
+    error,
+  } = useQuery<CustomerGetHistoryType>({
+    queryKey: [...CUSTOMERHISTORY_QUERY_KEY, slug],
+    queryFn: () => getCustomerHistoryById(Number(slug)),
+  });
 
   if (isLoading) {
     return (
@@ -62,19 +59,78 @@ const InventoryEdit = ({ params: { slug } }: InventoryEditProps) => {
     );
   }
 
-  if (!data) {
+  if (!customerDetails) {
     return (
       <Card className="p-6">
-        <div className="text-muted-foreground">No item found</div>
+        <div className="text-muted-foreground">No customer found</div>
       </Card>
     );
   }
 
   return (
-    <div className="p-12">
-      <EditCustomerForm data={data} />
+    <div className="container mx-auto p-4">
+      <Card className="bg-inherit">
+        <CardHeader>
+          <CardTitle>Customer Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6 grid grid-cols-2 gap-4">
+            {isCustomerDataLoading ? (
+              <div>loading...</div>
+            ) : (
+              <>
+                <div>
+                  <p className="font-semibold">Customer:</p>
+                  <p>{customerDetails?.fullName}</p>
+                </div>
+                <div>
+                  <p className="font-semibold">Id:</p>
+                  <p>{customerDetails?.id}</p>
+                </div>
+                <div>
+                  <p className="font-semibold">Phone:</p>
+                  <p>{customerDetails?.phone}</p>
+                </div>
+                <div>
+                  <p className="font-semibold">Email:</p>
+                  <p>{customerDetails?.email}</p>
+                </div>
+                <div>
+                  <p className="font-semibold">Note:</p>
+                  <p>{customerDetails?.note}</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          <h3 className="mb-2 text-lg font-semibold">Order History</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item Name</TableHead>
+                <TableHead>Count</TableHead>
+                <TableHead>Created Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {customerHistory &&
+                customerHistory?.map(
+                  (item: CustomerGetHistoryType, index: number) => (
+                    <TableRow key={index}>
+                      <TableCell>{item.itemName || 'N/A'}</TableCell>
+                      <TableCell>{item.count || 'N/A'}</TableCell>
+                      <TableCell>
+                        {format(new Date(item.createdDate), 'PPP') || 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  )
+                )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-export default InventoryEdit;
+export default CustomerViewPage;

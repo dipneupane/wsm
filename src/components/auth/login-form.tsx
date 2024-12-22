@@ -25,9 +25,7 @@ import { Label } from '../ui/label';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters long' }),
+  password: z.string().min(1, { message: 'Password is Required' }),
 });
 
 const LoginForm = () => {
@@ -36,8 +34,8 @@ const LoginForm = () => {
   const form = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'admin@gmail.com',
-      password: 'Test123$$',
+      email: '',
+      password: '',
     },
   });
 
@@ -77,7 +75,6 @@ const LoginForm = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="john@gmail.com"
                     {...field}
                   />
                 </FormControl>
@@ -97,7 +94,6 @@ const LoginForm = () => {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="********"
                     {...field}
                   />
                 </FormControl>

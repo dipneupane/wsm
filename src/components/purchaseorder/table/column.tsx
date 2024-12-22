@@ -79,6 +79,10 @@ export const columns: ColumnDef<PurchaseOrderGetAllType>[] = [
             return (
               <Badge className="translate-x-6 bg-green-400">Received</Badge>
             );
+          case 'PartialReceived':
+            return (
+              <Badge className="translate-x-6 bg-blue-400">Partial Received</Badge>
+            );
         }
       };
       return getStatusBadge(status);

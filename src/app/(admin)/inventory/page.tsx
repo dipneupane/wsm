@@ -32,7 +32,7 @@ const InventoryRootPage = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const { data, isLoading, refetch, isFetching, isPending } = useQuery({
-    queryKey: [INVENTORY_QUERY_KEY],
+    queryKey: INVENTORY_QUERY_KEY,
     queryFn: () =>
       getAllInventoryItems({
         filterText,
@@ -41,7 +41,8 @@ const InventoryRootPage = () => {
           { key: 'supplierId', value: supplierId },
         ],
       }),
-    initialData: [],
+    // initialData: [],
+    staleTime: 1000 * 60 * 5,
   });
 
   let { data: categories } = useQuery({
@@ -64,7 +65,7 @@ const InventoryRootPage = () => {
 
   const handleFilterChange = () => {
     setOpenDropdown(null);
-    refetch();
+    setTimeout(() => refetch(), 0);
   };
 
   const handleFilterReset = () => {
@@ -72,7 +73,7 @@ const InventoryRootPage = () => {
     setCategoryId([]);
     setSupplierId([]);
     setOpenDropdown(null);
-    refetch();
+    setTimeout(() => refetch(), 0);
   };
 
   const handleDropdownToggle = (dropdown: string) => {
@@ -157,7 +158,7 @@ const InventoryRootPage = () => {
         </Link>
       </div>
       {isLoading ? (
-        <Loader2Icon />
+        <Loader2Icon className="h-4 w-4 animate-spin" />
       ) : (
         <InventoryItemsTable data={data} filterUI={filterUI} />
       )}
