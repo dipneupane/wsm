@@ -10,6 +10,7 @@ import { Loader2Icon } from 'lucide-react';
 
 import {
   CustomerHistoryType,
+  ItemUpdateLogType,
   SupplierHistoryType,
 } from '@/types/inventory-items';
 
@@ -129,7 +130,46 @@ const InventoryEdit = ({ params: { slug } }: InventoryEditProps) => {
             </div>
           </div>
 
-          <h3 className="mb-2 text-lg font-semibold">Customer History</h3>
+          <h3 className="mt-5 text-lg font-semibold">Item Update Logs</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Old Stock</TableHead>
+                <TableHead>New Stock</TableHead>
+                <TableHead>Old Stock In Order</TableHead>
+                <TableHead>New Stock In Order</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Updated Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isInventoryCustomerDataLoading ? (
+                <div>Loading...</div>
+              ) : inventoryCustomerAndSupplierData?.itemUpdateLog &&
+                inventoryCustomerAndSupplierData?.itemUpdateLog.length > 0 ? (
+                inventoryCustomerAndSupplierData?.itemUpdateLog.map(
+                  (sup: ItemUpdateLogType, index: number) => (
+                    <TableRow key={index}>
+                      <TableCell>{sup?.oldStock || 'N/A'}</TableCell>
+                      <TableCell>{sup?.newStock || 'N/A'}</TableCell>
+                      <TableCell>{sup?.oldInOrder || 'N/A'}</TableCell>
+                      <TableCell>{sup?.newInOrder || 'N/A'}</TableCell>
+                      <TableCell>{sup?.description || 'N/A'}</TableCell>
+                      <TableCell>
+                        {format(new Date(sup?.updatedDate), 'PPP') || 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  )
+                )
+              ) : (
+                <TableRow>
+                  <div className="p-3">No Item Update Logs found</div>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+
+          <h3 className="mt-5 text-lg font-semibold">Customer History</h3>
           <Table>
             <TableHeader>
               <TableRow>
@@ -162,7 +202,7 @@ const InventoryEdit = ({ params: { slug } }: InventoryEditProps) => {
             </TableBody>
           </Table>
 
-          <h3 className="mb-2 mt-5 text-lg font-semibold">Supplier History</h3>
+          <h3 className="mt-5 text-lg font-semibold">Supplier History</h3>
           <Table>
             <TableHeader>
               <TableRow>

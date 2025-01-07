@@ -18,6 +18,7 @@ export const MultiSelectDropdown = ({
   setSelectedOptions,
   isOpen,
   toggleOpen,
+  className,
 }: MultiSelectDropdownProps) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const filteredOptions = options.filter((option) =>
@@ -37,7 +38,7 @@ export const MultiSelectDropdown = ({
       {/* Trigger Button */}
       <button
         onClick={toggleOpen}
-        className="inline-flex w-full justify-between text-nowrap rounded-md border px-4 py-2 text-sm font-medium"
+        className={`inline-flex w-full justify-between text-nowrap rounded-md border px-4 py-2 text-sm font-medium ${className}`}
       >
         <div className="flex items-center gap-2 opacity-90">
           <span>{label}</span>

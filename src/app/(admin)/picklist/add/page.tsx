@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -8,6 +8,7 @@ import { getAllCategories } from '@/services/categories';
 import { getAllCustomerInformation } from '@/services/customer';
 import { getAllInventoryItems } from '@/services/inventory-item';
 import { createPickList } from '@/services/pick-list';
+import { getAllSupplierInformation } from '@/services/supplier';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronsUpDown, Loader2Icon, Trash2Icon } from 'lucide-react';
@@ -15,15 +16,20 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { InventoryItemsGetAllType } from '@/types/inventory-items';
+import { ItemGetByIdType } from '@/types/items';
+
 import {
   CATEGORY_QUERY_KEY,
   CUSTOMER_QUERY_KEY,
   INVENTORY_QUERY_KEY,
   PICKLIST_QUERY_KEY,
+  SUPPLIER_QUERY_KEY,
 } from '@/config/query-keys';
 
 import { cn } from '@/lib/utils';
 
+import { MultiSelectDropdown } from '@/components/MultiSelectDropDown/multiselectdropdown';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -104,7 +110,12 @@ export type AdditionalInformations = {
 };
 
 const PickUpListRootPage = () => {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [filteredItems, setFilteredItems] = useState<
+    InventoryItemsGetAllType[] | undefined
+  >([]);
+  const [supplierId, setSupplierId] = useState<number[]>([]);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // Initialize form with Zod resolver
   const form = useForm<z.infer<typeof pickListSchema>>({
@@ -123,9 +134,9 @@ const PickUpListRootPage = () => {
     queryFn: getAllCategories,
   });
 
-  const { data: inventoryItemsList, isLoading: isInventoryListLoading } =
+  let { data: inventoryItemsList, isLoading: isInventoryListLoading } =
     useQuery({
-      queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
+      queryKey: [INVENTORY_QUERY_KEY[0], { filterText: '', filterParams: [] }],
       queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
     });
 
@@ -134,11 +145,15 @@ const PickUpListRootPage = () => {
     queryFn: getAllCustomerInformation,
   });
 
+  const { data: suppliers } = useQuery({
+    queryKey: SUPPLIER_QUERY_KEY,
+    queryFn: getAllSupplierInformation,
+  });
+
   const [pickListItems, setPickListItems] = useState<pickListItems[]>([]);
   const [additionalInformation, setAdditionalInformation] = useState<
     AdditionalInformations[]
   >([]);
-
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -199,6 +214,35 @@ const PickUpListRootPage = () => {
       return;
     }
     mutation.mutateAsync(data);
+  };
+
+  useEffect(() => {
+    setFilteredItems(inventoryItemsList);
+  }, [inventoryItemsList]);
+
+  const handleFilterChange = () => {
+    setOpenDropdown(null);
+    const filtered =
+      supplierId.length > 0
+        ? inventoryItemsList?.filter((item: ItemGetByIdType) =>
+            supplierId.includes(item.supplierId)
+          )
+        : inventoryItemsList;
+    setFilteredItems(filtered);
+  };
+
+  const handleFilterReset = () => {
+    setSupplierId([]);
+    setOpenDropdown(null);
+    setFilteredItems(inventoryItemsList);
+  };
+
+  const handleDropdownToggle = (dropdown: string) => {
+    if (openDropdown === dropdown) {
+      setOpenDropdown(null);
+    } else {
+      setOpenDropdown(dropdown);
+    }
   };
 
   return (
@@ -425,16 +469,46 @@ const PickUpListRootPage = () => {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search items..." />
+                    <Command className="overflow-visible">
+                      <div className="flex items-center gap-2 p-1">
+                        <CommandInput
+                          placeholder="Search items..."
+                          className="w-full min-w-72"
+                        />
+
+                        {suppliers && suppliers?.length > 0 && (
+                          <MultiSelectDropdown
+                            label="Select Suppliers"
+                            options={suppliers?.map((sup) => ({
+                              label: sup.fullName,
+                              value: sup.id,
+                            }))}
+                            selectedOptions={supplierId}
+                            setSelectedOptions={setSupplierId}
+                            isOpen={openDropdown === 'supplier'}
+                            toggleOpen={() => handleDropdownToggle('supplier')}
+                            className="border-none"
+                          />
+                        )}
+                        <Button type="button" onClick={handleFilterChange}>
+                          Apply Filters
+                        </Button>
+                        <Button
+                          type="button"
+                          className="bg-red-500 text-white hover:bg-red-400"
+                          onClick={handleFilterReset}
+                        >
+                          Reset
+                        </Button>
+                      </div>
                       <CommandEmpty>No items found.</CommandEmpty>
                       <CommandGroup>
-                        <ScrollArea className="h-64">
+                        <ScrollArea className="h-64 w-[700px]">
                           {isInventoryListLoading && (
-                            <Loader2Icon className="mx-auto animate-spin" />
+                            <Loader2Icon className="mx-auto mt-10 animate-spin" />
                           )}
-                          {inventoryItemsList?.map(
-                            (item) =>
+                          {filteredItems?.map(
+                            (item: InventoryItemsGetAllType) =>
                               item.categoryId === c.key && (
                                 <>
                                   {

@@ -33,9 +33,19 @@ export interface SupplierHistoryType {
   quantity: number;
 }
 
+export interface ItemUpdateLogType {
+  oldStock:number,
+  newStock:number,
+  oldInOrder:number,
+  newInOrder:number,
+  description:string,
+  updatedDate:string
+}
+
 interface InventoryCustomerDetail {
   customerHistory: CustomerHistoryType[];
   supplierHistory: SupplierHistoryType[];
+  itemUpdateLog:ItemUpdateLogType[]
 }
 
 // Interface for 'create' and 'update' operations, which omit the extra fields

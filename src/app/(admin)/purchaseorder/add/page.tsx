@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { getAllCategories } from '@/services/categories';
 import { getAllInventoryItems } from '@/services/inventory-item';
 import {
   createPurchaseOrder,
@@ -12,17 +13,21 @@ import {
 import { getAllSupplierInformation } from '@/services/supplier';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronsUpDown, Trash2Icon } from 'lucide-react';
+import { ChevronsUpDown, Loader2Icon, Trash2Icon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { InventoryItemsGetAllType } from '@/types/inventory-items';
+
 import {
+  CATEGORY_QUERY_KEY,
   INVENTORY_QUERY_KEY,
   PURCHASEORDER_QUERY_KEY,
   SUPPLIER_QUERY_KEY,
 } from '@/config/query-keys';
 
+import { MultiSelectDropdown } from '@/components/MultiSelectDropDown/multiselectdropdown';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -69,7 +74,7 @@ const STATUS = {
   Draft: 1,
   Ordered: 2,
   Received: 3,
-  PartialReceived: 4
+  PartialReceived: 4,
 } as const;
 
 const PurchaseOrderAddPage = () => {
@@ -83,8 +88,16 @@ const PurchaseOrderAddPage = () => {
     unitPrice: number;
   };
 
-  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<
+  const [purchaseOrderItems, setPurchaseOrderItems] = useState<
     PurchaseOrderItems[]
+  >([]);
+  const [currentSelectedSupplier, setCurrentSelectedSupplier] = useState<
+    number | undefined
+  >(undefined);
+  const [categoryId, setCategoryId] = useState<number[]>([]);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [filteredItems, setFilteredItems] = useState<
+    InventoryItemsGetAllType[] | undefined
   >([]);
 
   // Query hooks
@@ -98,9 +111,15 @@ const PurchaseOrderAddPage = () => {
     queryFn: getPurchaseOrderNumber,
   });
 
-  const { data: inventoryItemsList } = useQuery({
-    queryKey: [...INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
-    queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
+  const { data: inventoryItemsList, isLoading: isInventoryListLoading } =
+    useQuery({
+      queryKey: [INVENTORY_QUERY_KEY[0], { filterText: '', filterParams: [] }],
+      queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
+    });
+
+  const { data: categories, isLoading: isCategotyLoading } = useQuery({
+    queryKey: CATEGORY_QUERY_KEY,
+    queryFn: getAllCategories,
   });
   // Initialize form with Zod resolver
   const form = useForm<z.infer<typeof purchaseOrderSchema>>({
@@ -114,6 +133,17 @@ const PurchaseOrderAddPage = () => {
       statusId: 1,
     },
   });
+
+  useEffect(() => {
+    if (currentSelectedSupplier) {
+      const filteredItems = inventoryItemsList?.filter(
+        (item) => item.supplierId === currentSelectedSupplier
+      );
+      setFilteredItems(filteredItems);
+    } else {
+      setFilteredItems(inventoryItemsList);
+    }
+  }, [inventoryItemsList, currentSelectedSupplier]);
 
   useEffect(() => {
     form.setValue('poNumber', purchaseOrderNumber);
@@ -203,6 +233,32 @@ const PurchaseOrderAddPage = () => {
     };
     mutation.mutateAsync(data);
   };
+
+  //filter items based on supplier and category
+  const handleFilterChange = () => {
+    setOpenDropdown(null);
+    const filtered =
+      categoryId.length > 0
+        ? inventoryItemsList?.filter((item: any) =>
+            categoryId.includes(item.categoryId)
+          )
+        : inventoryItemsList;
+    setFilteredItems(filtered);
+  };
+
+  const handleFilterReset = () => {
+    setCategoryId([]);
+    setOpenDropdown(null);
+    setFilteredItems(inventoryItemsList);
+  };
+
+  const handleDropdownToggle = (dropdown: string) => {
+    if (openDropdown === dropdown) {
+      setOpenDropdown(null);
+    } else {
+      setOpenDropdown(dropdown);
+    }
+  };
   return (
     <>
       <h2 className="text-xl font-bold">Purchase Order Details</h2>
@@ -260,6 +316,7 @@ const PurchaseOrderAddPage = () => {
                               <CommandItem
                                 key={supplier.id}
                                 onSelect={() => {
+                                  setCurrentSelectedSupplier(supplier.id);
                                   form.setValue('supplierId', supplier.id, {
                                     shouldValidate: true,
                                   });
@@ -396,12 +453,41 @@ const PurchaseOrderAddPage = () => {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search items..." />
+                    <Command className="overflow-visible">
+                      <div className="flex items-center gap-2 p-1">
+                        <CommandInput placeholder="Search items..." />
+                        {categories && categories?.length > 0 && (
+                          <MultiSelectDropdown
+                            label="Select Category"
+                            options={categories?.map((sup) => ({
+                              label: sup.value,
+                              value: sup.key,
+                            }))}
+                            selectedOptions={categoryId}
+                            setSelectedOptions={setCategoryId}
+                            isOpen={openDropdown === 'category'}
+                            toggleOpen={() => handleDropdownToggle('category')}
+                            className="border-none"
+                          />
+                        )}
+                        <Button type="button" onClick={handleFilterChange}>
+                          Apply Filters
+                        </Button>
+                        <Button
+                          type="button"
+                          className="bg-red-500 text-white hover:bg-red-400"
+                          onClick={handleFilterReset}
+                        >
+                          Reset
+                        </Button>
+                      </div>
                       <CommandEmpty>No items found.</CommandEmpty>
                       <CommandGroup>
-                        <ScrollArea className="h-64">
-                          {inventoryItemsList?.map((item) => (
+                        <ScrollArea className="h-64 w-[750px]">
+                          {isInventoryListLoading && (
+                            <Loader2Icon className="mx-auto mt-10 animate-spin" />
+                          )}
+                          {filteredItems?.map((item) => (
                             <CommandItem
                               key={item.id}
                               disabled={purchaseOrderItems?.some(
@@ -416,11 +502,9 @@ const PurchaseOrderAddPage = () => {
                                 )
                               }
                             >
-                              {item.id} - {item.code} - Category:{' '}
-                              {item.categoryName} - {item.description}
+                              {item.id} - {item.code} - {item.description}
                               <span className="text-sm">
-                                Stock({item.stock}) | Supplier:{' '}
-                                {item.supplierName}
+                                Stock({item.stock})
                               </span>
                             </CommandItem>
                           ))}

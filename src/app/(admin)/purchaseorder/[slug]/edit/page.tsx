@@ -127,7 +127,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
       orderDate: '',
       requiredByDate: '',
       paymentTerm: '',
-      statusId: 1,
+      statusId: undefined,
     },
   });
 
@@ -230,7 +230,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
         purchaseOrderId: currentSlug,
         description: item.description,
         quantity: Number(item.quantity),
-        receivedQuantity: Number(item.receivedQuantity),
+        receivedQuantity: values.statusId == STATUS.Received ? item.quantity : Number(item.receivedQuantity ?? 0),
         unitPrice: Number(item.unitPrice),
       })),
     };
@@ -383,9 +383,8 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       setSelectedStatusId(Number(value));
                     }}
                     value={
-                      field.value
-                        ? field.value.toString()
-                        : STATUS.Draft.toString()
+                      field.value?.toString() ??
+                      purchaseOrderData?.statusId.toString()
                     }
                   >
                     <SelectTrigger
@@ -530,7 +529,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                         id={`receivedQuantity-${item.id}`}
                         type="number"
                         required
-                        min={1}
+                        min={0}
                         disabled
                         value={item.quantity}
                         onChange={(e) => handleItemFieldChange(item, 'receivedQuantity', e.target.value)}
@@ -547,7 +546,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                           id={`receivedQuantity-${item.id}`}
                           type="number"
                           required
-                          min={1}
+                          min={0}
                           value={item.receivedQuantity}
                           onChange={(e) => handleItemFieldChange(item, 'receivedQuantity', e.target.value)}
                         />
