@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { getAllCategories } from '@/services/categories';
 import { getAllInventoryItems } from '@/services/inventory-item';
 import {
   getPurchaseOrderById,
@@ -18,12 +19,18 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { InventoryItemsGetAllType } from '@/types/inventory-items';
+
 import {
+  CATEGORY_QUERY_KEY,
   INVENTORY_QUERY_KEY,
   PURCHASEORDER_QUERY_KEY,
   SUPPLIER_QUERY_KEY,
 } from '@/config/query-keys';
 
+import { MultiSelectDropdown } from '@/components/MultiSelectDropDown/multiselectdropdown';
+import AddStockFromPoDialog from '@/components/purchaseorder/add-stock-from-po-dialog';
+import { SyncWithStockDialog } from '@/components/purchaseorder/sync-stock-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -101,9 +108,15 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     queryFn: getAllSupplierInformation,
   });
 
-  const { data: inventoryItemsList } = useQuery({
-    queryKey: [INVENTORY_QUERY_KEY, { filterText: '', filterParams: [] }],
-    queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
+  const { data: inventoryItemsList, isLoading: isInventoryListLoading } =
+    useQuery({
+      queryKey: [INVENTORY_QUERY_KEY[0], { filterText: '', filterParams: [] }],
+      queryFn: () => getAllInventoryItems({ filterText: '', filterParams: [] }),
+    });
+
+  const { data: categories, isLoading: isCategotyLoading } = useQuery({
+    queryKey: CATEGORY_QUERY_KEY,
+    queryFn: getAllCategories,
   });
 
   // Update mutation
@@ -141,8 +154,18 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     unitPrice: number;
   };
 
-  const [selectedStatusId, setSelectedStatusId] = React.useState<number>();
-  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<PurchaseOrderItems[]>([]);
+  const [selectedStatusId, setSelectedStatusId] = useState<number>();
+  const [purchaseOrderItems, setPurchaseOrderItems] = React.useState<
+    PurchaseOrderItems[]
+  >([]);
+  const [categoryId, setCategoryId] = useState<number[]>([]);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [filteredItems, setFilteredItems] = useState<
+    InventoryItemsGetAllType[] | undefined
+  >([]);
+  const [currentSelectedSupplier, setCurrentSelectedSupplier] = useState<
+    number | undefined
+  >(undefined);
 
   // Prefill data when fetched
   useEffect(() => {
@@ -159,6 +182,17 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
       setSelectedStatusId(purchaseOrderData.statusId);
     }
   }, [purchaseOrderData, form]);
+
+  useEffect(() => {
+    if (currentSelectedSupplier) {
+      const filteredItems = inventoryItemsList?.filter(
+        (item) => item.supplierId === currentSelectedSupplier
+      );
+      setFilteredItems(filteredItems);
+    } else {
+      setFilteredItems(inventoryItemsList);
+    }
+  }, [inventoryItemsList, currentSelectedSupplier]);
 
   const handleAddItem = (
     itemId: number,
@@ -185,7 +219,6 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
       alert('received quantity should not be greater than actual quantity');
       return;
     }
-
 
     if (field === 'quantity' || field === 'unitPrice') {
       // Allow empty string
@@ -218,6 +251,32 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
     );
   };
 
+  //filter items based on supplier and category
+  const handleFilterChange = () => {
+    setOpenDropdown(null);
+    const filtered =
+      categoryId.length > 0
+        ? inventoryItemsList?.filter((item: any) =>
+            categoryId.includes(item.categoryId)
+          )
+        : inventoryItemsList;
+    setFilteredItems(filtered);
+  };
+
+  const handleFilterReset = () => {
+    setCategoryId([]);
+    setOpenDropdown(null);
+    setFilteredItems(inventoryItemsList);
+  };
+
+  const handleDropdownToggle = (dropdown: string) => {
+    if (openDropdown === dropdown) {
+      setOpenDropdown(null);
+    } else {
+      setOpenDropdown(dropdown);
+    }
+  };
+
   // Submit form
   const onSubmit = async (values: z.infer<typeof purchaseOrderSchema>) => {
     let currentSlug = Number(slug);
@@ -230,8 +289,12 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
         purchaseOrderId: currentSlug,
         description: item.description,
         quantity: Number(item.quantity),
-        receivedQuantity: values.statusId == STATUS.Received ? item.quantity : Number(item.receivedQuantity ?? 0),
+        receivedQuantity:
+          values.statusId == STATUS.Received
+            ? item.quantity
+            : Number(item.receivedQuantity ?? 0),
         unitPrice: Number(item.unitPrice),
+        itemCode: item.itemCode,
       })),
     };
     mutation.mutateAsync(updatedPurchaseOrder);
@@ -274,8 +337,8 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       >
                         {field.value && supplierList
                           ? supplierList.find(
-                            (supplier: any) => supplier.id === field.value
-                          )?.fullName
+                              (supplier: any) => supplier.id === field.value
+                            )?.fullName
                           : 'Select Supplier'}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -432,12 +495,52 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search items..." />
+                    <Command
+                      filter={(value, search) => {
+                        if (
+                          value.toLowerCase().startsWith(search.toLowerCase())
+                        )
+                          return 1;
+                        return 0;
+                      }}
+                      className="overflow-visible"
+                    >
+                      <div className="flex items-center gap-2 p-1">
+                        <CommandInput placeholder="Search items..." />
+                        {categories && categories?.length > 0 && (
+                          <MultiSelectDropdown
+                            label="Select Category"
+                            options={categories?.map((sup) => ({
+                              label: sup.value,
+                              value: sup.key,
+                            }))}
+                            selectedOptions={categoryId}
+                            setSelectedOptions={setCategoryId}
+                            isOpen={openDropdown === 'category'}
+                            toggleOpen={() => handleDropdownToggle('category')}
+                            className="border-none"
+                          />
+                        )}
+                        <Button type="button" onClick={handleFilterChange}>
+                          Apply Filters
+                        </Button>
+                        <Button
+                          type="button"
+                          className="bg-red-500 text-white hover:bg-red-400"
+                          onClick={handleFilterReset}
+                        >
+                          Reset
+                        </Button>
+                        {/* add new stock */}
+                        <AddStockFromPoDialog />
+                      </div>
                       <CommandEmpty>No items found.</CommandEmpty>
                       <CommandGroup>
-                        <ScrollArea className="h-64">
-                          {inventoryItemsList?.map((item) => (
+                        <ScrollArea className="h-64 w-[750px]">
+                          {isInventoryListLoading && (
+                            <Loader2Icon className="mx-auto mt-10 animate-spin" />
+                          )}
+                          {filteredItems?.map((item) => (
                             <CommandItem
                               key={item.id}
                               disabled={purchaseOrderItems?.some(
@@ -452,7 +555,7 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                                 )
                               }
                             >
-                              {item.id} - {item.code} - {item.description}-
+                              {item.code} -{item.description}
                               <span className="text-sm">
                                 Stock({item.stock})
                               </span>
@@ -492,7 +595,13 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       type="text"
                       id={`description-${item.itemId}`}
                       value={item.description}
-                      onChange={(e) => handleItemFieldChange(item, 'description', e.target.value)}
+                      onChange={(e) =>
+                        handleItemFieldChange(
+                          item,
+                          'description',
+                          e.target.value
+                        )
+                      }
                     />
                   </div>
 
@@ -503,7 +612,9 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       id={`unitPrice-${item.id}`}
                       type="number"
                       value={item.unitPrice}
-                      onChange={(e) => handleItemFieldChange(item, 'unitPrice', e.target.value)}
+                      onChange={(e) =>
+                        handleItemFieldChange(item, 'unitPrice', e.target.value)
+                      }
                     />
                   </div>
 
@@ -516,14 +627,23 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                       required
                       min={1}
                       value={item.quantity}
-                      disabled={selectedStatusId == STATUS.Received || selectedStatusId == STATUS.PartialReceived ? true : false}
-                      onChange={(e) => handleItemFieldChange(item, 'quantity', e.target.value)}
+                      disabled={
+                        selectedStatusId == STATUS.Received ||
+                        selectedStatusId == STATUS.PartialReceived
+                          ? true
+                          : false
+                      }
+                      onChange={(e) =>
+                        handleItemFieldChange(item, 'quantity', e.target.value)
+                      }
                     />
                   </div>
 
-                  {selectedStatusId == STATUS.Received &&
+                  {selectedStatusId == STATUS.Received && (
                     <div>
-                      <Label htmlFor={`receivedQuantity-${item.id}`}>Received</Label>
+                      <Label htmlFor={`receivedQuantity-${item.id}`}>
+                        Received
+                      </Label>
                       <Input
                         className="w-20"
                         id={`receivedQuantity-${item.id}`}
@@ -532,15 +652,23 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                         min={0}
                         disabled
                         value={item.quantity}
-                        onChange={(e) => handleItemFieldChange(item, 'receivedQuantity', e.target.value)}
+                        onChange={(e) =>
+                          handleItemFieldChange(
+                            item,
+                            'receivedQuantity',
+                            e.target.value
+                          )
+                        }
                       />
                     </div>
-                  }
+                  )}
 
-                  {selectedStatusId == STATUS.PartialReceived &&
+                  {selectedStatusId == STATUS.PartialReceived && (
                     <div>
-                      <div className='mt-3'>
-                        <Label htmlFor={`receivedQuantity-${item.id}`}>Received</Label>
+                      <div className="mt-3">
+                        <Label htmlFor={`receivedQuantity-${item.id}`}>
+                          Received
+                        </Label>
                         <Input
                           className="w-20"
                           id={`receivedQuantity-${item.id}`}
@@ -548,25 +676,44 @@ const PurchaseOrderEdit: React.FC<PurchaseOrderEditProps> = ({
                           required
                           min={0}
                           value={item.receivedQuantity}
-                          onChange={(e) => handleItemFieldChange(item, 'receivedQuantity', e.target.value)}
+                          onChange={(e) =>
+                            handleItemFieldChange(
+                              item,
+                              'receivedQuantity',
+                              e.target.value
+                            )
+                          }
                         />
                       </div>
-                      <div className={`text-xs ${(item.quantity ?? 0) - (item.receivedQuantity ?? 0) == 0 ? 'text-green-500' : 'text-red-500'}`}>remaining: {(item.quantity ?? 0) - (item.receivedQuantity ?? 0)}</div>
+                      <div
+                        className={`text-xs ${(item.quantity ?? 0) - (item.receivedQuantity ?? 0) == 0 ? 'text-green-500' : 'text-red-500'}`}
+                      >
+                        remaining:{' '}
+                        {(item.quantity ?? 0) - (item.receivedQuantity ?? 0)}
+                      </div>
                     </div>
-                  }
+                  )}
 
                   <Button
                     type="button"
                     className="translate-y-3"
                     variant="destructive"
                     onClick={() =>
-                      setPurchaseOrderItems((prev: any) =>
-                        prev.filter((v: any) => v.itemId !== item.itemId)
+                      setPurchaseOrderItems((prev) =>
+                        prev.filter((v) => v.itemId !== item.itemId)
                       )
                     }
                   >
                     <Trash2Icon />
                   </Button>
+                  <SyncWithStockDialog
+                    itemId={item.itemId}
+                    unitPrice={
+                      purchaseOrderItems.find(
+                        (v) => v.itemCode === item.itemCode
+                      )?.unitPrice!
+                    }
+                  />
                 </div>
               ))}
             </div>

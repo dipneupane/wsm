@@ -5,10 +5,16 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { getAllCategories } from '@/services/categories';
-import { getAllInventoryItems } from '@/services/inventory-item';
+import {
+  bulkUpdateStock,
+  getAllInventoryItems,
+} from '@/services/inventory-item';
 import { getAllSupplierInformation } from '@/services/supplier';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownIcon, Loader2Icon, PlusCircleIcon } from 'lucide-react';
+import { toast } from 'sonner';
+
+import { InventoryItemsGetAllType } from '@/types/inventory-items';
 
 import {
   CATEGORY_QUERY_KEY,
@@ -20,16 +26,21 @@ import { handleInventoryItemExport } from '@/lib/helper/export-inventory-items';
 
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import BulkEditModal from '@/components/inventory/bulk-edit-modal';
 import InventoryItemsTable from '@/components/inventory/table';
 import { MultiSelectDropdown } from '@/components/MultiSelectDropDown/multiselectdropdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const InventoryRootPage = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [categoryId, setCategoryId] = useState<number[]>([]);
   const [supplierId, setSupplierId] = useState<number[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [selectedRows, setSelectedRows] = useState<
+    InventoryItemsGetAllType[] | []
+  >([]);
 
   const { data, isLoading, refetch, isFetching, isPending } = useQuery({
     queryKey: INVENTORY_QUERY_KEY,
@@ -82,6 +93,47 @@ const InventoryRootPage = () => {
     } else {
       setOpenDropdown(dropdown);
     }
+  };
+
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: bulkUpdateStock,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: INVENTORY_QUERY_KEY,
+      });
+      toast.success('Updated Successfully');
+      setSelectedRows([]);
+      setIsModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+      setIsModalOpen(false);
+    },
+  });
+  const handleBulkUpdate = async () => {
+    const updatedItems = selectedRows.map((item) => ({
+      id: item.id,
+      cost: item.cost,
+      stock: item.stock,
+    }));
+    await mutation.mutateAsync(updatedItems);
+  };
+
+  const handleCostChange = (id: number, newCost: number) => {
+    setSelectedRows(
+      selectedRows.map((item) =>
+        item.id === id ? { ...item, cost: newCost } : item
+      )
+    );
+  };
+
+  const handleStockChange = (id: number, newStock: number) => {
+    setSelectedRows(
+      selectedRows.map((item) =>
+        item.id === id ? { ...item, stock: newStock } : item
+      )
+    );
   };
 
   if (isLoading || isPending || isFetching) {
@@ -142,6 +194,15 @@ const InventoryRootPage = () => {
       <DashboardHeader text="Manage your Stock" heading="Stock" />
 
       <div className="flex w-full justify-end gap-x-2">
+        <BulkEditModal
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+          selectedRows={selectedRows}
+          handleCostChange={handleCostChange}
+          handleStockChange={handleStockChange}
+          handleBulkUpdate={handleBulkUpdate}
+        />
+
         <Button onClick={() => handleItemExport(data!)} disabled={isExporting}>
           {isExporting ? (
             <Loader2Icon className="h-4 w-4 animate-spin" />
@@ -160,7 +221,11 @@ const InventoryRootPage = () => {
       {isLoading ? (
         <Loader2Icon className="h-4 w-4 animate-spin" />
       ) : (
-        <InventoryItemsTable data={data} filterUI={filterUI} />
+        <InventoryItemsTable
+          data={data}
+          filterUI={filterUI}
+          onSelectedRowsChange={setSelectedRows}
+        />
       )}
     </DashboardShell>
   );

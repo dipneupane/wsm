@@ -6,6 +6,7 @@ interface IPurchaseOrderItemsBase {
   quantity: number;
   receivedQuantity: number;
   unitPrice: number;
+  itemCode: string;
 }
 
 // Extended interface for Purchase Order items used in getById

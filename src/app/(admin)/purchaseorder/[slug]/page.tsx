@@ -151,20 +151,20 @@ export default function ViewPickupListItems({
                 <TableHead>Quantity</TableHead>
                 <TableHead>Unit Price</TableHead>
                 <TableHead>Total</TableHead>
+                <TableHead>Received</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {purchaseOrderData.purchaseOrderItems.map(
-                (item: any, index: any) => (
-                  <TableRow key={index}>
-                    <TableCell>{item?.itemCode || 'N/A'}</TableCell>
-                    <TableCell>{item.description || 'N/A'}</TableCell>
-                    <TableCell>{item.quantity || 'N/A'}</TableCell>
-                    <TableCell>{item.unitPrice || 'N/A'}</TableCell>
-                    <TableCell>{item.total || 'N/A'}</TableCell>
-                  </TableRow>
-                )
-              )}
+              {purchaseOrderData.purchaseOrderItems.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell>{item.itemCode || 'N/A'}</TableCell>
+                  <TableCell>{item.description || 'N/A'}</TableCell>
+                  <TableCell>{item.quantity || 'N/A'}</TableCell>
+                  <TableCell>{item.unitPrice || 'N/A'}</TableCell>
+                  <TableCell>{item.total || 'N/A'}</TableCell>
+                  <TableCell>{item.receivedQuantity || 0}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </CardContent>

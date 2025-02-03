@@ -13,15 +13,39 @@ import ActionCellComponent from './action';
 export const columns: ColumnDef<PurchaseOrderGetAllType>[] = [
   {
     accessorKey: 'poNumber',
-    header: 'PO Number',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant={'outline'}
+          className="flex cursor-pointer items-center gap-x-2 border-none"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          PO Number
+          <ArrowUpDownIcon />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return <p className="mx-auto w-1/2">{row.original.poNumber}</p>;
+    },
   },
   {
     accessorKey: 'supplierName',
     header: 'Supplier',
   },
   {
-    accessorKey: 'createdDate',
-    header: 'Ordered Date',
+    accessorKey: 'orderDate',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Ordered Date
+          <ArrowUpDownIcon />
+        </Button>
+      );
+    },
     cell: ({ row }) => {
       const date = new Date(row.original.orderDate);
       const formattedDate = date.toLocaleDateString('en-US', {
@@ -81,7 +105,9 @@ export const columns: ColumnDef<PurchaseOrderGetAllType>[] = [
             );
           case 'PartialReceived':
             return (
-              <Badge className="translate-x-6 bg-blue-400">Partial Received</Badge>
+              <Badge className="translate-x-6 bg-blue-400">
+                Partial Received
+              </Badge>
             );
         }
       };

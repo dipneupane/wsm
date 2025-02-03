@@ -48,7 +48,7 @@ const LoginForm = () => {
         password: data.password,
       });
       if (res?.status === 200 && !res?.error) {
-        toast.success('Login successfull');
+        // toast.success('Login successfull');
         router.push('/inventory');
       } else toast.error('Invalid credentials');
     } catch (error) {
@@ -72,11 +72,7 @@ const LoginForm = () => {
               <FormItem>
                 <Label htmlFor="email">Email</Label>
                 <FormControl>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...field}
-                  />
+                  <Input id="email" type="email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -91,11 +87,7 @@ const LoginForm = () => {
                   <Label htmlFor="password">Password</Label>
                 </div>
                 <FormControl>
-                  <Input
-                    id="password"
-                    type="password"
-                    {...field}
-                  />
+                  <Input id="password" type="password" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

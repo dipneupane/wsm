@@ -110,3 +110,17 @@ export const getPurchaseOrderBySupplierID = async (
     throw error;
   }
 };
+
+export const clonePurchaseOrderById = async (id: number): Promise<number> => {
+  try {
+    const { data } = await apiClientWithClientHeader.post<ApiResponse<number>>(
+      `/PurchaseOrder/Clone?id=${id}`
+    );
+    if (!data.succeeded) {
+      throw new Error(data.messages[0] || 'Unknown error from the server');
+    }
+    return data.data;
+  } catch (error) {
+    throw error;
+  }
+};

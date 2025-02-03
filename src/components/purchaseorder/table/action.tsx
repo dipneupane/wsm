@@ -3,14 +3,26 @@
 import React from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-import { downloadPickListProductionSheet } from '@/services/pick-list';
+import { clonePurchaseOrderById } from '@/services/purchase-order';
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Row } from '@tanstack/react-table';
+import { toast } from 'sonner';
 
 import { PurchaseOrderGetAllType } from '@/types/purchase-order';
 
+import { PURCHASEORDER_QUERY_KEY } from '@/config/query-keys';
+
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,26 +36,45 @@ interface ICellComponentProps {
 }
 
 export default function ActionCellComponent({ row }: ICellComponentProps) {
-  const generatePDF = async (purchaseOrderID: number) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/PurchaseOrder/DownloadPurchaseOrder?id=${purchaseOrderID}`
-      );
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const mutation = useMutation({
+    mutationFn: clonePurchaseOrderById,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: PURCHASEORDER_QUERY_KEY,
+      });
+      toast.success('Purchase order cloned successfully');
+      router.push('/purchaseorder');
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
 
-      if (!response.ok) {
-        throw new Error('Failed to download PDF');
-      }
+  const handleDuplicate = async (id: number) => {
+    mutation.mutateAsync(id);
+  };
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `PurchaseOrder_${purchaseOrderID}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading the file:', error);
-    }
+  const ConfirmCloneDialog = () => {
+    return (
+      <Dialog>
+        <DialogTrigger>Clone </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Are You absolutely sure you want to clone this PO?
+            </DialogTitle>
+            <Button
+              className="my-6 ms-auto w-fit cursor-pointer"
+              onClick={() => handleDuplicate(row.original.id)}
+            >
+              Clone
+            </Button>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   return (
@@ -59,15 +90,6 @@ export default function ActionCellComponent({ row }: ICellComponentProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        {/* <DropdownMenuItem>
-          <Link
-            href=""
-            className="w-full"
-            onClick={() => generatePDF(row.original.id)}
-          >
-            Download
-          </Link>
-        </DropdownMenuItem> */}
         <DropdownMenuItem>
           <Link className="w-full" href={`/purchaseorder/${row.original.id}`}>
             View
@@ -80,6 +102,9 @@ export default function ActionCellComponent({ row }: ICellComponentProps) {
           >
             Edit
           </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={(e) => e.preventDefault()}>
+          <ConfirmCloneDialog />
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

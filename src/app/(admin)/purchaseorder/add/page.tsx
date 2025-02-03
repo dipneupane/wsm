@@ -5,7 +5,10 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { getAllCategories } from '@/services/categories';
-import { getAllInventoryItems } from '@/services/inventory-item';
+import {
+  bulkUpdateStock,
+  getAllInventoryItems,
+} from '@/services/inventory-item';
 import {
   createPurchaseOrder,
   getPurchaseOrderNumber,
@@ -28,6 +31,8 @@ import {
 } from '@/config/query-keys';
 
 import { MultiSelectDropdown } from '@/components/MultiSelectDropDown/multiselectdropdown';
+import AddStockFromPoDialog from '@/components/purchaseorder/add-stock-from-po-dialog';
+import { SyncWithStockDialog } from '@/components/purchaseorder/sync-stock-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -453,7 +458,16 @@ const PurchaseOrderAddPage = () => {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0">
-                    <Command className="overflow-visible">
+                    <Command
+                      filter={(value, search) => {
+                        if (
+                          value.toLowerCase().startsWith(search.toLowerCase())
+                        )
+                          return 1;
+                        return 0;
+                      }}
+                      className="overflow-visible"
+                    >
                       <div className="flex items-center gap-2 p-1">
                         <CommandInput placeholder="Search items..." />
                         {categories && categories?.length > 0 && (
@@ -480,6 +494,8 @@ const PurchaseOrderAddPage = () => {
                         >
                           Reset
                         </Button>
+                        {/* add new stock */}
+                        <AddStockFromPoDialog />
                       </div>
                       <CommandEmpty>No items found.</CommandEmpty>
                       <CommandGroup>
@@ -502,7 +518,7 @@ const PurchaseOrderAddPage = () => {
                                 )
                               }
                             >
-                              {item.id} - {item.code} - {item.description}
+                              {item.code} -{item.description}
                               <span className="text-sm">
                                 Stock({item.stock})
                               </span>
@@ -518,7 +534,7 @@ const PurchaseOrderAddPage = () => {
 
             {/* Additional Details */}
             <div className="flex flex-col items-start">
-              {purchaseOrderItems?.map((item: any) => (
+              {purchaseOrderItems?.map((item) => (
                 <div
                   key={item.itemId}
                   className="flex w-full items-center justify-center gap-x-2 py-2"
@@ -553,10 +569,10 @@ const PurchaseOrderAddPage = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
+                    <Label htmlFor={`quantity-${item.itemId}`}>Quantity</Label>
                     <Input
                       className="w-20"
-                      id={`quantity-${item.id}`}
+                      id={`quantity-${item.itemId}`}
                       type="number"
                       min={1}
                       value={item.quantity}
@@ -570,10 +586,12 @@ const PurchaseOrderAddPage = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`unitPrice-${item.id}`}>Unit Price</Label>
+                    <Label htmlFor={`unitPrice-${item.itemId}`}>
+                      Unit Price
+                    </Label>
                     <Input
                       className="w-20"
-                      id={`unitPrice-${item.id}`}
+                      id={`unitPrice-${item.itemId}`}
                       type="text"
                       value={item.unitPrice}
                       required
@@ -599,6 +617,14 @@ const PurchaseOrderAddPage = () => {
                   >
                     <Trash2Icon />
                   </Button>
+                  <SyncWithStockDialog
+                    itemId={item.itemId}
+                    unitPrice={
+                      purchaseOrderItems.find(
+                        (v) => v.itemCode === item.itemCode
+                      )?.unitPrice!
+                    }
+                  />
                 </div>
               ))}
             </div>
@@ -615,5 +641,4 @@ const PurchaseOrderAddPage = () => {
     </>
   );
 };
-
 export default PurchaseOrderAddPage;

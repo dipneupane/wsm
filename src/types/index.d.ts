@@ -15,6 +15,14 @@ export type Auth = {
   jwt: string;
 };
 
+type UserAuthType = {
+  id: number;
+  email: string;
+  role: string;
+  jwt: string;
+  refreshToken: string;
+};
+
 export enum ApplicationRoleConstant {
   Admin = 'Admin',
   User = 'User',

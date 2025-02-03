@@ -15,8 +15,8 @@ import {
 } from '@tanstack/react-table';
 
 import { InventoryItemsGetAllType } from '@/types/inventory-items';
-import DataTablePagination from '@/components/generic-table/data-table-pagination';
 
+import DataTablePagination from '@/components/generic-table/data-table-pagination';
 import {
   Table,
   TableBody,
@@ -30,16 +30,19 @@ import { columns } from './column';
 
 interface IUsersTableProps {
   data: InventoryItemsGetAllType[] | any;
-  filterUI?: any;
+  filterUI?: React.ReactNode;
+  onSelectedRowsChange: (rows: InventoryItemsGetAllType[] | []) => void;
 }
 
 export default function InventoryItemsTable({
   data,
   filterUI,
+  onSelectedRowsChange,
 }: IUsersTableProps) {
   return (
     <DataTable<InventoryItemsGetAllType>
       filterUI={filterUI}
+      onSelectedRowsChange={onSelectedRowsChange}
       data={data}
       columns={columns}
       searchFields={[
@@ -61,15 +64,18 @@ interface GenericTableProps<InventoryItemsGetAllType> {
   data?: InventoryItemsGetAllType[];
   columns: ColumnDef<InventoryItemsGetAllType>[];
   searchFields?: SearchField<InventoryItemsGetAllType>[];
-  filterUI?: any;
+  filterUI?: React.ReactNode;
+  onSelectedRowsChange: (rows: InventoryItemsGetAllType[] | []) => void;
 }
 function DataTable<T>({
   data,
   columns,
   filterUI,
+  onSelectedRowsChange,
 }: GenericTableProps<InventoryItemsGetAllType>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState({});
 
   const table = useReactTable({
     data: data || [],
@@ -80,12 +86,20 @@ function DataTable<T>({
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    state: { columnFilters, sorting },
+    onRowSelectionChange: async (newSelection) => {
+      await setRowSelection(newSelection);
+      const selectedRows = table
+        .getFilteredSelectedRowModel()
+        .rows.map((row) => row.original);
+
+      onSelectedRowsChange(selectedRows);
+    },
+    state: { columnFilters, sorting, rowSelection },
     initialState: {
       pagination: {
-        pageSize: 50
-      }
-    }
+        pageSize: 50,
+      },
+    },
   });
 
   return (
@@ -100,9 +114,9 @@ function DataTable<T>({
                   {header.isPlaceholder
                     ? null
                     : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                 </TableHead>
               ))}
             </TableRow>
@@ -114,14 +128,21 @@ function DataTable<T>({
               return (
                 <TableRow
                   className={`border-black dark:border-white ${row.original.stock <= row.original.safetyStockRequired ? 'bg-red-300/60 hover:bg-red-300/30 dark:bg-red-600' : ''} `}
-                  key={row.id}>
+                  key={row.id}
+                >
                   {row.getVisibleCells().map((cell: any) => {
                     const cellValue = cell.getValue();
                     return (
-                      <TableCell className={`${isNaN(cellValue) ? 'text-left' : 'text-center'}`} key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      <TableCell
+                        className={`${isNaN(cellValue) ? 'text-left' : 'text-center'}`}
+                        key={cell.id}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </TableCell>
-                    )
+                    );
                   })}
                 </TableRow>
               );
